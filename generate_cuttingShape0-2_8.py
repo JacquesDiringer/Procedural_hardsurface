@@ -6,7 +6,7 @@ import random
 from datetime import datetime
 
 # Probabilities.
-randomSeed = -1 # Seed for randomization, different everytime when set to negative.
+randomSeed = 0 # Seed for randomization, different everytime when set to negative.
 rectangleProbability = 0.5 # Probability to pop a rectangle rather than a sphere.
 poppingNewEdge = 1.0 # Probability for each edge to enter a recursive cycle if the recursivity limit has not been hit.
 notchType45 = 0.5 # Probability to pop a 45 degrees notch.
@@ -14,6 +14,9 @@ outerProbability = 0.5 # Probability to have a notch coming outward rather than 
 relativeWidthMin = 0.1 # Minimum length of a notch relative to the edge it is created from.
 relativeWidthMax = 0.9 # Maximum length of a notch relative to the edge it is created from.
 relativeDepthWidthRatioMax = 0.3 # Maximum depth of a notch relative to it's length.
+
+# Rounding probabilities.
+roundProbability = 0.5
 
 # Rectangles probabilities.
 maximumRatioDifference = 0.2 # Maximum ratio between height and width, smaller values make for a bigger ratio. Should belong to [0 ; 1].
@@ -23,8 +26,9 @@ verticalProbability = 0.5 # Probability of poping a vertical rectangle if maximu
 minmumCircleEdges = 3 # Minimum possible edges in a circle.
 maximumCircleEdges = 6 # Maximum possible edges in a circle.
 
+
 # Global settings.
-recursivity = 1 # Recursivity limit.
+recursivity = 0 # Recursivity limit.
 squareRadius = 5 # Drives the number of shapes generated.
 symetry = False # When True, all edges will have the same details generated, even recursively.
 
@@ -133,6 +137,14 @@ def edgeToNotch45(seed, originalBmesh, edge, relativeWidth, relativeDepth, outer
     newEdges.append(originalBmesh.edges.new((vertF, vertB)))
     
     return newEdges
+
+def vertToRound(seed, originalBmesh, vertList, outer):
+    
+    originalBmesh.edges.ensure_lookup_table()
+    
+    bmesh.ops.bevel(originalBmesh, geom=vertList, offset_type='OFFSET', offset=1.05, segments=5, profile=0.5, vertex_only=True, clamp_overlap=True)
+    
+    originalBmesh.edges.ensure_lookup_table()
     
     
 def genericEdgeTransformation(seed, originalBmesh, edgeToTransform, recursionDepth):
@@ -153,6 +165,24 @@ def genericEdgeTransformation(seed, originalBmesh, edgeToTransform, recursionDep
             returnedEdges = edgeToNotch45(seed, originalBmesh, edgeToTransform, currentWidth, currentDepth, outer)
         else:
             returnedEdges = edgeToNotch90(seed, originalBmesh, edgeToTransform, currentWidth, currentDepth, outer)
+        
+            # Only for 90 degrees notches will we round some vertices up.
+            # Count vertices that are encountered twice, therefore all the vertices that do not belong to the sides of this edge selection.
+            vertDictionary = {}
+            for currentEdge in returnedEdges:
+                for currentVert in currentEdge.verts:
+                    if currentVert in vertDictionary:
+                        vertDictionary[currentVert] = vertDictionary[currentVert] + 1
+                    else:
+                        vertDictionary[currentVert] = 1
+            
+            # Select only the inner vertices.            
+            innerVertices = [currentVert for currentVert, currentCount in vertDictionary.items() if currentCount >= 2]
+            # Of the inner vertices, select only some randomly.
+            innerVerticesRandom = [currentVert for currentVert in innerVertices if random.uniform(0,1) < roundProbability]
+            
+            # Apply the rounding to the randomly selected vertices.
+            vertToRound(seed, originalBmesh, innerVerticesRandom, False)
         
         # Recursion.
         if recursionDepth > 0:
@@ -207,8 +237,8 @@ def genericShapeTransformation(seed, recursionDepth):
             futureSeed = random.randint(0, 1000000)
             
         genericEdgeTransformation(futureSeed, bm, bm.edges[currentEdge], recursionDepth)
-            
         
+    
     print("Final edges = " + str(len(bm.edges)))
 
     bm.edges.ensure_lookup_table()
@@ -256,7 +286,7 @@ def generateRectangleCuttingShape(seed, position, dimension, recursionDepth):
     genericShapeTransformation(seed, recursionDepth)
     
     
-def generateGenericShape(seed, position):
+def generateGenericCuttingShape(seed, position):
     if random.uniform(0,1) < rectangleProbability :
         # Generate a rectangle of random dimension.
         downscaleValue = random.uniform(maximumRatioDifference, 1.0)
@@ -292,4 +322,4 @@ else:
 
 for xCoords in range(-squareRadius, squareRadius):
     for yCoords in range(-squareRadius, squareRadius):
-        generateGenericShape(seed=random.randint(0, 1000000), position=(xCoords, yCoords, 0))
+        generateGenericCuttingShape(seed=random.randint(0, 1000000), position=(xCoords, yCoords, 0))
