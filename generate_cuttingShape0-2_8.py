@@ -14,6 +14,7 @@ outerProbability = 0.5 # Probability to have a notch coming outward rather than 
 relativeWidthMin = 0.1 # Minimum length of a notch relative to the edge it is created from.
 relativeWidthMax = 0.9 # Maximum length of a notch relative to the edge it is created from.
 relativeDepthWidthRatioMax = 0.3 # Maximum depth of a notch relative to it's length.
+thinnestOffset = 0.05
 
 # Rounding probabilities.
 roundProbability = 0.5
@@ -38,10 +39,7 @@ symetry = False # When True, all edges will have the same details generated, eve
 # ___________    ->    _____       _____
 #                           |_____|
 
-def edgeToNotch90(seed, originalBmesh, edge, relativeWidth, relativeDepth, outer):
-    
-    # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
-    random.seed(seed)
+def edgeToNotch90(originalBmesh, edge, relativeWidth, widthOffset, relativeDepth, outer):
     
     # Remember the original 2 vertices.
     vertA = edge.verts[0]
@@ -57,10 +55,6 @@ def edgeToNotch90(seed, originalBmesh, edge, relativeWidth, relativeDepth, outer
     
     if (outer):
         vectorV = -vectorV
-    
-    # Temp values
-    thinnestOffset = 0.05
-    widthOffset = random.uniform(thinnestOffset, (1.0 - thinnestOffset) - relativeWidth)
     
     # Outer part.
     # C vert.
@@ -90,10 +84,7 @@ def edgeToNotch90(seed, originalBmesh, edge, relativeWidth, relativeDepth, outer
 # ___________    ->    _____       _____
 #                           \_____/
 
-def edgeToNotch45(seed, originalBmesh, edge, relativeWidth, relativeDepth, outer):
-    
-    # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
-    random.seed(seed)
+def edgeToNotch45(originalBmesh, edge, relativeWidth, widthOffset, relativeDepth, outer):
     
     originalBmesh.edges.ensure_lookup_table()
     
@@ -113,10 +104,6 @@ def edgeToNotch45(seed, originalBmesh, edge, relativeWidth, relativeDepth, outer
     
     if (outer):
         vectorV = -vectorV
-    
-    # Temp values
-    thinnestOffset = 0.05
-    widthOffset = random.uniform(thinnestOffset, (1.0 - thinnestOffset) - relativeWidth)
     
     # Outer part.
     # C vert.
@@ -165,14 +152,15 @@ def genericEdgeTransformation(seed, originalBmesh, edgeToTransform, recursionDep
         
         # Temp variables.
         currentWidth = random.uniform(relativeWidthMin, relativeWidthMax)
+        widthOffset = random.uniform(thinnestOffset, (1.0 - thinnestOffset) - currentWidth)
         currentDepth = random.uniform(0.01, currentWidth * relativeDepthWidthRatioMax)
         outer = random.uniform(0,1) < outerProbability
         
         # Decide what the next recursive function is.
         if(random.uniform(0, 1) < notchType45):
-            returnedEdges = edgeToNotch45(seed, originalBmesh, edgeToTransform, currentWidth, currentDepth, outer)
+            returnedEdges = edgeToNotch45(originalBmesh, edgeToTransform, currentWidth, widthOffset, currentDepth, outer)
         else:
-            returnedEdges = edgeToNotch90(seed, originalBmesh, edgeToTransform, currentWidth, currentDepth, outer)
+            returnedEdges = edgeToNotch90(originalBmesh, edgeToTransform, currentWidth, widthOffset, currentDepth, outer)
         
             # Only for 90 degrees notches will we round some vertices up.
             # Count vertices that are encountered twice, therefore all the vertices that do not belong to the sides of this edge selection.
