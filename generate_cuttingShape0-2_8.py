@@ -14,12 +14,12 @@ outerProbability = 0.5 # Probability to have a notch coming outward rather than 
 relativeWidthMin = 0.1 # Minimum length of a notch relative to the edge it is created from.
 relativeWidthMax = 0.9 # Maximum length of a notch relative to the edge it is created from.
 relativeDepthWidthRatioMax = 0.3 # Maximum depth of a notch relative to it's length.
-thinnestOffset = 0.05
+thinnestOffset = 0.05 # The minimum distance between the beginning of a notch in the end of the initial edge.
 
 # Rounding probabilities.
-roundProbability = 0.5
-outerRoundProbability = 0.5
-roundSegments = 5
+roundProbability = 0.5 # Probability of turning a 90 degrees angle into a curve.
+outerRoundProbability = 0.5 # Probability of the curve to face outward.
+roundSegments = 5 # Number of vertices composing the curve.
 
 # Rectangles probabilities.
 maximumRatioDifference = 0.2 # Maximum ratio between height and width, smaller values make for a bigger ratio. Should belong to [0 ; 1].
