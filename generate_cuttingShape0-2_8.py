@@ -17,6 +17,8 @@ relativeDepthWidthRatioMax = 0.3 # Maximum depth of a notch relative to it's len
 
 # Rounding probabilities.
 roundProbability = 0.5
+outerRoundProbability = 0.5
+roundSegments = 5
 
 # Rectangles probabilities.
 maximumRatioDifference = 0.2 # Maximum ratio between height and width, smaller values make for a bigger ratio. Should belong to [0 ; 1].
@@ -138,11 +140,17 @@ def edgeToNotch45(seed, originalBmesh, edge, relativeWidth, relativeDepth, outer
     
     return newEdges
 
-def vertToRound(seed, originalBmesh, vertList, outer):
+def vertToRound(originalBmesh, vertList, outerRound):
     
     originalBmesh.edges.ensure_lookup_table()
     
-    bmesh.ops.bevel(originalBmesh, geom=vertList, offset_type='OFFSET', offset=1.05, segments=5, profile=0.5, vertex_only=True, clamp_overlap=True)
+    if outerRound:
+        chosenProfile = 0.125
+    else:
+        chosenProfile = 0.5
+    
+    # Rounding operation.
+    bmesh.ops.bevel(originalBmesh, geom=vertList, offset_type='OFFSET', offset=1.05, segments=roundSegments, profile=chosenProfile, vertex_only=True, clamp_overlap=True)
     
     originalBmesh.edges.ensure_lookup_table()
     
@@ -181,8 +189,10 @@ def genericEdgeTransformation(seed, originalBmesh, edgeToTransform, recursionDep
             # Of the inner vertices, select only some randomly.
             innerVerticesRandom = [currentVert for currentVert in innerVertices if random.uniform(0,1) < roundProbability]
             
+            #Randomly choose if an the rounding will be an inner or outer one.
+            outerRound = random.uniform(0,1) < outerRoundProbability
             # Apply the rounding to the randomly selected vertices.
-            vertToRound(seed, originalBmesh, innerVerticesRandom, False)
+            vertToRound(originalBmesh, innerVerticesRandom, outerRound)
         
         # Recursion.
         if recursionDepth > 0:
@@ -237,7 +247,9 @@ def genericShapeTransformation(seed, recursionDepth):
             futureSeed = random.randint(0, 1000000)
             
         genericEdgeTransformation(futureSeed, bm, bm.edges[currentEdge], recursionDepth)
-        
+
+    # Some of the previous operations can cause some vertices to be at the same position, remove duplicates.
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.000001)
     
     print("Final edges = " + str(len(bm.edges)))
 
