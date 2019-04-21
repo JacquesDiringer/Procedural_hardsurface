@@ -288,6 +288,9 @@ def generateRectangleCuttingShape(seed, position, dimension, recursionDepth):
     
     
 def generateGenericCuttingShape(seed, position):
+    # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
+    random.seed(seed)
+    
     if random.uniform(0,1) < rectangleProbability :
         # Generate a rectangle of random dimension.
         downscaleValue = random.uniform(maximumRatioDifference, 1.0)
@@ -349,4 +352,4 @@ else:
 
 for xCoords in range(-squareRadius, squareRadius):
     for yCoords in range(-squareRadius, squareRadius):
-        generateGenericCuttingShape(seed=random.randint(0, 1000000), position=(xCoords, yCoords, 0))
+        generateGenericCuttingShape(seed=xCoords + yCoords * squareRadius, position=(xCoords, yCoords, 0))
