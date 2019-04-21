@@ -31,6 +31,7 @@ maximumCircleEdges = 6 # Maximum possible edges in a circle.
 
 
 # Global settings.
+generateNewCollection = False # When true, generate a new collection for each batch, when false, replaces the old collection content.
 recursivity = 0 # Recursivity limit.
 squareRadius = 5 # Drives the number of shapes generated.
 symetry = False # When True, all edges will have the same details generated, even recursively.
@@ -224,7 +225,7 @@ def genericShapeTransformation(seed, recursionDepth):
     # Browse edges.
     bm.edges.ensure_lookup_table()
 
-    print("Initial edges = " + str(len(bm.edges)))
+#    print("Initial edges = " + str(len(bm.edges)))
         
     for currentEdge in range(0, len(bm.edges)):
         if symetry:
@@ -239,7 +240,7 @@ def genericShapeTransformation(seed, recursionDepth):
     # Some of the previous operations can cause some vertices to be at the same position, remove duplicates.
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.000001)
     
-    print("Final edges = " + str(len(bm.edges)))
+#    print("Final edges = " + str(len(bm.edges)))
 
     bm.edges.ensure_lookup_table()
 
@@ -310,6 +311,32 @@ def generateGenericCuttingShape(seed, position):
 # Main
 
 print("starting main")
+
+if not generateNewCollection:
+    # Delete the old collection
+    singletonCollectionIndex = bpy.context.scene.collection.children.find("hardsurface_shapes")
+    if singletonCollectionIndex >= 0:
+        singletonCollection = bpy.context.scene.collection.children[singletonCollectionIndex]
+        # Remove meshes data to avoid orphans.
+        for currentObject in singletonCollection.objects:
+            bpy.data.meshes.remove(currentObject.data)
+        # Remove the collection from the scene.
+        bpy.context.scene.collection.children.unlink(singletonCollection)
+        bpy.data.collections.remove(singletonCollection)
+    
+# Create a new collection.
+testCollection = bpy.data.collections.new("hardsurface_shapes")
+# Link it to the current scene.
+bpy.context.scene.collection.children.link(testCollection)
+# Make the added collection active.
+bpy.context.view_layer.active_layer_collection = bpy.context.view_layer.layer_collection.children[testCollection.name]
+
+# Make all collections invisible excepting for the new one.
+for currentChild in bpy.context.scene.collection.children:
+    currentChild.hide_viewport = True
+testCollection.hide_viewport = False
+    
+
 
 # Intialize seed.
 if randomSeed >= 0 :
