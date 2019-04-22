@@ -352,4 +352,4 @@ else:
 
 for xCoords in range(-squareRadius, squareRadius):
     for yCoords in range(-squareRadius, squareRadius):
-        generateGenericCuttingShape(seed=xCoords + yCoords * squareRadius, position=(xCoords, yCoords, 0))
+        generateGenericCuttingShape(seed=xCoords + yCoords * squareRadius * 2, position=(xCoords, yCoords, 0))
