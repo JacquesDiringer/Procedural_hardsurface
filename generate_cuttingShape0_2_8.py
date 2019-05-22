@@ -31,9 +31,7 @@ maximumCircleEdges = 6 # Maximum possible edges in a circle.
 
 
 # Global settings.
-generateNewCollection = False # When true, generate a new collection for each batch, when false, replaces the old collection content.
 recursivity = 0 # Recursivity limit.
-squareRadius = 5 # Drives the number of shapes generated.
 symetry = False # When True, all edges will have the same details generated, even recursively.
 
 
@@ -311,45 +309,52 @@ def generateGenericCuttingShape(seed, position):
 
 
 
-# Main
+# Populate a square with random cutting shapes.
+# squareRadius, Drives the number of shapes generated.
+# generateNewCollection, When true, generate a new collection for each batch, when false, replaces the old collection content.
+def generateCuttingShapesArray(squareRadius = 5, generateNewCollection = False):
 
-print("starting main")
+    print("generating a collection of hard surface shapes")
 
-if not generateNewCollection:
-    # Delete the old collection
-    singletonCollectionIndex = bpy.context.scene.collection.children.find("hardsurface_shapes")
-    if singletonCollectionIndex >= 0:
-        singletonCollection = bpy.context.scene.collection.children[singletonCollectionIndex]
-        # Remove meshes data to avoid orphans.
-        for currentObject in singletonCollection.objects:
-            bpy.data.meshes.remove(currentObject.data)
-        # Remove the collection from the scene.
-        bpy.context.scene.collection.children.unlink(singletonCollection)
-        bpy.data.collections.remove(singletonCollection)
-    
-# Create a new collection.
-testCollection = bpy.data.collections.new("hardsurface_shapes")
-# Link it to the current scene.
-bpy.context.scene.collection.children.link(testCollection)
-# Make the added collection active.
-bpy.context.view_layer.active_layer_collection = bpy.context.view_layer.layer_collection.children[testCollection.name]
+    if not generateNewCollection:
+        # Delete the old collection
+        singletonCollectionIndex = bpy.context.scene.collection.children.find("hardsurface_shapes")
+        if singletonCollectionIndex >= 0:
+            singletonCollection = bpy.context.scene.collection.children[singletonCollectionIndex]
+            # Remove meshes data to avoid orphans.
+            for currentObject in singletonCollection.objects:
+                bpy.data.meshes.remove(currentObject.data)
+            # Remove the collection from the scene.
+            bpy.context.scene.collection.children.unlink(singletonCollection)
+            bpy.data.collections.remove(singletonCollection)
+        
+    # Create a new collection.
+    testCollection = bpy.data.collections.new("hardsurface_shapes")
+    # Link it to the current scene.
+    bpy.context.scene.collection.children.link(testCollection)
+    # Make the added collection active.
+    bpy.context.view_layer.active_layer_collection = bpy.context.view_layer.layer_collection.children[testCollection.name]
 
-# Make all collections invisible excepting for the new one.
-for currentChild in bpy.context.scene.collection.children:
-    currentChild.hide_viewport = True
-testCollection.hide_viewport = False
-    
+    # Make all collections invisible excepting for the new one.
+    for currentChild in bpy.context.scene.collection.children:
+        currentChild.hide_viewport = True
+    testCollection.hide_viewport = False
+        
 
 
-# Intialize seed.
-if randomSeed >= 0 :
-    random.seed(randomSeed)
-else:
-    # Take the current time to randomize the seed when we want it different each time.
-    random.seed(datetime.now())
+    # Intialize seed.
+    if randomSeed >= 0 :
+        random.seed(randomSeed)
+    else:
+        # Take the current time to randomize the seed when we want it different each time.
+        random.seed(datetime.now())
 
-#generateGenericShape(seed=randomSeed, position=(0, 0, 0))
+    #generateGenericShape(seed=randomSeed, position=(0, 0, 0))
 
-for xCoords in range(-squareRadius, squareRadius):
-    for yCoords in range(-squareRadius, squareRadius):
-        generateGenericCuttingShape(seed=xCoords + yCoords * squareRadius * 2, position=(xCoords, yCoords, 0))
+    for xCoords in range(-squareRadius, squareRadius):
+        for yCoords in range(-squareRadius, squareRadius):
+            generateGenericCuttingShape(seed=xCoords + yCoords * squareRadius * 2, position=(xCoords, yCoords, 0))
+
+
+# Test function
+generateCuttingShapesArray()
