@@ -21,5 +21,7 @@ importlib.reload(generate_cuttingShape0_2_8)
 from generate_cuttingShape0_2_8 import *
 
 
+
+
 # Test function.
-generateCuttingShapesArray()
+generateRectangleCuttingShape(seed=0, position=(0, 0, 0), dimension=(1, 1), recursionDepth=0)
