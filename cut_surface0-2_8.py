@@ -51,8 +51,15 @@ def createOverrideContext():
         'edit_object'      : bpy.context.object
     }
     
-    # Set view to TOP by directly rotating the 3D view region's view_rotation
+    # Set the view to origin with a small distance so that we have a better precision for the knife projection.
+    rv3d.view_location = (0,0,0)
+    rv3d.view_distance = 1
+    
+    # Set view to TOP by directly rotating the 3D view region's view_rotation.
     rv3d.view_rotation = Euler( (0,0,0) ).to_quaternion()
+    
+    # Set the canera to orthographic.
+    rv3d.view_perspective = 'ORTHO'
     
     return override
 
@@ -76,6 +83,8 @@ def knifeProject(surfaceToCut, surfaceCuter):
 
     # Go back to object mode.
     bpy.ops.object.mode_set(mode = 'OBJECT')
+    
+    return bpy.context.active_object
 
 
 
@@ -87,4 +96,4 @@ originalySelectedObject = bpy.context.active_object
 cuttingShape = generateRectangleCuttingShape(seed=1, position=(0, 0, 0), dimension=(3, 0.5), recursionDepth=0)
 
 # Use the cutting shape to cut the currently selected surface.
-knifeProject(originalySelectedObject, cuttingShape)
+cutObject = knifeProject(originalySelectedObject, cuttingShape)
