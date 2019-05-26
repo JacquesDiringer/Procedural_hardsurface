@@ -24,4 +24,6 @@ from generate_cuttingShape0_2_8 import *
 
 
 # Test function.
-generateRectangleCuttingShape(seed=0, position=(0, 0, 0), dimension=(1, 1), recursionDepth=0)
+createdShape = generateRectangleCuttingShape(seed=1, position=(0, 0, 0), dimension=(3, 0.5), recursionDepth=0)
+
+print(str(createdShape))

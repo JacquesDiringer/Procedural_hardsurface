@@ -35,6 +35,44 @@ recursivity = 0 # Recursivity limit.
 symetry = False # When True, all edges will have the same details generated, even recursively.
 
 
+# This function generates a square of 1 unit on the sides, facing up.
+# Then returns it.
+def generateUnitSquare():
+	verts = [   (-0.5, -0.5, 0),
+				(0.5, -0.5, 0),
+				(0.5, 0.5, 0),
+				(-0.5, 0.5, 0)] 
+
+	mesh = bpy.data.meshes.new("UnitPlaneMesh")  # add a new mesh
+	obj = bpy.data.objects.new("UnitPlane", mesh)  # add a new object using the mesh
+
+	scene = bpy.context.scene
+	#scene.objects.link(obj)  # put the object into the scene (link)
+#    scene.objects.active = obj  # set as the active object in the scene
+#    obj.select = True  # select object
+
+#    mesh = bpy.context.object.data
+	bm = bmesh.new()
+
+	for v in verts:
+		bm.verts.new(v)  # add a new vert
+
+	# Refresh bmesh.
+	bm.verts.ensure_lookup_table()   
+	bm.edges.ensure_lookup_table()
+		
+	bm.edges.new((bm.verts[0], bm.verts[1]))
+	bm.edges.new((bm.verts[1], bm.verts[2]))
+	bm.edges.new((bm.verts[2], bm.verts[3]))
+	bm.edges.new((bm.verts[3], bm.verts[0]))
+
+	# make the bmesh the object's mesh
+	bm.to_mesh(mesh)  
+	bm.free()  # always do this when finished
+	
+	return obj
+
+
 # ___________    ->    _____	   _____
 #   						|_____|
 
@@ -66,7 +104,7 @@ def edgeToNotch90(originalBmesh, edge, relativeWidth, widthOffset, relativeDepth
 	vertD = originalBmesh.verts.new(vertA.co + widthOffset * vectorU + relativeDepth * vectorV)
 	# E vert.
 	vertE = originalBmesh.verts.new(vertA.co + (widthOffset + relativeWidth) * vectorU + relativeDepth * vectorV)
-	
+
 	# Link vertices as edges.
 	newEdges = []
 	newEdges.append(originalBmesh.edges.new((vertA, vertC)))
@@ -258,6 +296,11 @@ def generateCircleCuttingShape(seed, position, dimension, edgeCount, recursionDe
 	
 	# Generate a plane.
 	bpy.ops.mesh.primitive_circle_add(radius=0.4, vertices=edgeCount, location=(position))
+
+	# Keep track of the created object.
+	createdShape = bpy.context.active_object
+	createdShape.name = "circle_cuttingShape"
+	createdShape.data.name = "circle_cuttingShape_mesh"
 	
 	# Resize object in edit mode.
 	bpy.ops.object.mode_set(mode = 'EDIT')
@@ -275,6 +318,11 @@ def generateRectangleCuttingShape(seed, position, dimension, recursionDepth):
 	# Generate a plane.
 	bpy.ops.mesh.primitive_plane_add(size=0.8, view_align=False, enter_editmode=False, location=(position))
 	
+	# Keep track of the created object.
+	createdShape = bpy.context.active_object
+	createdShape.name = "rectangle_cuttingShape"
+	createdShape.data.name = "rectangle_cuttingShape_mesh"
+	
 	# Resize object in edit mode.
 	bpy.ops.object.mode_set(mode = 'EDIT')
 	bpy.ops.mesh.select_all(action='SELECT')
@@ -283,6 +331,8 @@ def generateRectangleCuttingShape(seed, position, dimension, recursionDepth):
 	
 	# Generic function to add details on edges.
 	genericShapeTransformation(seed, recursionDepth)
+
+	return createdShape
 	
 	
 def generateGenericCuttingShape(seed, position):
@@ -294,14 +344,16 @@ def generateGenericCuttingShape(seed, position):
 		downscaleValue = random.uniform(maximumRatioDifference, 1.0)
 		# Apply downscale on either x or y.
 		if random.uniform(0,1) < verticalProbability :
-			generateRectangleCuttingShape(seed=seed, position=position, dimension=((downscaleValue, 1)), recursionDepth=recursivity)
+			createdShape = generateRectangleCuttingShape(seed=seed, position=position, dimension=((downscaleValue, 1)), recursionDepth=recursivity)
 		else:
-			generateRectangleCuttingShape(seed=seed, position=position, dimension=((1, downscaleValue)), recursionDepth=recursivity)
+			createdShape = generateRectangleCuttingShape(seed=seed, position=position, dimension=((1, downscaleValue)), recursionDepth=recursivity)
 			
 	else:
 		# Generate a circle of random vertices.
 		verticesCount = random.uniform(minmumCircleEdges, maximumCircleEdges)
-		generateCircleCuttingShape(seed=seed, position=position, dimension=((1.0, 1.0)), edgeCount=verticesCount, recursionDepth=recursivity)
+		createdShape = generateCircleCuttingShape(seed=seed, position=position, dimension=((1.0, 1.0)), edgeCount=verticesCount, recursionDepth=recursivity)
+
+	return createdShape
 
 
 
@@ -358,4 +410,5 @@ def generateCuttingShapesArray(squareRadius = 5, generateNewCollection = False):
 
 # Test function
 if __name__ == "__main__":
-    generateCuttingShapesArray()
+#   generateUnitSquare()
+	generateCuttingShapesArray()
