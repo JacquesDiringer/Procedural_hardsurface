@@ -10,6 +10,7 @@ from mathutils import Euler
 import sys
 import os
 import importlib
+import copy
 
 blend_dir = os.path.dirname(bpy.data.filepath)
 if blend_dir not in sys.path:
@@ -48,8 +49,15 @@ def createOverrideContext():
         'window'           : bpy.context.window,
         'screen'           : bpy.context.screen,
         'selected_objects' : bpy.context.selected_objects,
-        'edit_object'      : bpy.context.object
+        'edit_object'      : bpy.context.object,
+        'region_3d'        : rv3d
     }
+    
+    originalRegion3D = {
+        'view_location'     : copy.copy(rv3d.view_location),
+        'view_distance'     : rv3d.view_distance,
+        'view_rotation'     : copy.copy(rv3d.view_rotation),
+        'view_perspective'  : rv3d.view_perspective}
     
     # Set the view to origin with a small distance so that we have a better precision for the knife projection.
     rv3d.view_location = (0,0,0)
@@ -61,7 +69,15 @@ def createOverrideContext():
     # Set the canera to orthographic.
     rv3d.view_perspective = 'ORTHO'
     
-    return override
+    return override, originalRegion3D
+
+def setRegion3D(override, originalConfiguration):
+    rv3d = override['region_3d']
+    
+    rv3d.view_location      = originalConfiguration['view_location']
+    rv3d.view_distance      = originalConfiguration['view_distance']
+    rv3d.view_rotation      = originalConfiguration['view_rotation']
+    rv3d.view_perspective   = originalConfiguration['view_perspective']
 
 
 def knifeProject(surfaceToCut, surfaceCuter):
@@ -70,7 +86,7 @@ def knifeProject(surfaceToCut, surfaceCuter):
     bpy.context.view_layer.objects.active = surfaceToCut
     surfaceCuter.select_set(True)
     
-    override = createOverrideContext()
+    override, originalRegion3D = createOverrideContext()
 
     # Force redraw the scene - this is considered unsavory but is necessary here.
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
@@ -83,6 +99,9 @@ def knifeProject(surfaceToCut, surfaceCuter):
 
     # Go back to object mode.
     bpy.ops.object.mode_set(mode = 'OBJECT')
+    
+    # Reset the view to it's configuration before the knife project.
+    setRegion3D(override, originalRegion3D)
     
     return bpy.context.active_object
 
