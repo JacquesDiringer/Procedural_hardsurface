@@ -17,7 +17,7 @@ relativeDepthWidthRatioMax = 0.3 # Maximum depth of a notch relative to it's len
 thinnestOffset = 0.05 # The minimum distance between the beginning of a notch in the end of the initial edge.
 
 # Rounding probabilities.
-roundProbability = 0.5 # Probability of turning a 90 degrees angle into a curve.
+roundProbability = 0.0 # Probability of turning a 90 degrees angle into a curve.
 outerRoundProbability = 0.5 # Probability of the curve to face outward.
 roundSegments = 5 # Number of vertices composing the curve.
 
@@ -410,5 +410,4 @@ def generateCuttingShapesArray(squareRadius = 5, generateNewCollection = False):
 
 # Test function
 if __name__ == "__main__":
-#   generateUnitSquare()
 	generateCuttingShapesArray()

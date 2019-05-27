@@ -112,35 +112,49 @@ def addCutCrease(surfaceToCrease):
     bpy.context.view_layer.objects.active = surfaceToCrease
     bpy.ops.object.mode_set(mode = 'EDIT')
     
+    # Set the edges of the crease as sharp.
+    bpy.ops.mesh.mark_sharp()
+    
+    bevelOffset = 0.01
     # Create a bevel, the cutting shape of only one segment becomes 3 segments after this.
-    bpy.ops.mesh.bevel(offset_type='OFFSET', offset=0.5, offset_pct=0, segments=2, profile=0.5, vertex_only=False, clamp_overlap=True, loop_slide=True, mark_seam=False, mark_sharp=True)
+    bpy.ops.mesh.bevel(offset_type='OFFSET', offset=bevelOffset, offset_pct=0, segments=2, profile=0.5, vertex_only=False, clamp_overlap=True, loop_slide=True, mark_seam=False, mark_sharp=True)
+    
     
     # Select less to only keep the middle segment selected.
     bpy.ops.mesh.select_less()
     
+    # Set the bottom of the crease as sharp.
+    bpy.ops.mesh.mark_sharp()
+    
     # Lower the middle segment to create the crease.
-    bpy.ops.transform.translate(value=(0, 0, -0.01), orient_type='LOCAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, True), mirror=True, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1)
+    bpy.ops.transform.translate(value=(0, 0, -bevelOffset * 2), orient_type='LOCAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, True), mirror=True, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1)
     
     # Go back to object mode.
     bpy.ops.object.mode_set(mode = 'OBJECT')
 
+# Cuts a random shape in a surface, then gives it a crease to make it look like a plate.
+def cutPlate(surfaceToCut):
+
+    # Generate a cutting shape
+    cuttingShape = generateRectangleCuttingShape(seed=2, position=(0, 0, 0), dimension=(3, 0.5), recursionDepth=0)
+
+    # Use the cutting shape to cut the currently selected surface.
+    cutObject = knifeProject(surfaceToCut, cuttingShape)
+
+    # Delete the no longer needed cutting shape.
+    dataToRemove = cuttingShape.data
+    bpy.data.objects.remove(cuttingShape)
+    bpy.data.meshes.remove(dataToRemove)
+
+    # Crease the cut surface.
+    addCutCrease(cutObject)
 
 
+# Test function
+if __name__ == "__main__":
+    # Keep track of the selected object.
+    originalySelectedObject = bpy.context.active_object
 
-# Keep track of the selected object.
-originalySelectedObject = bpy.context.active_object
-
-
-# Generate a cutting shape
-cuttingShape = generateRectangleCuttingShape(seed=1, position=(0, 0, 0), dimension=(3, 0.5), recursionDepth=0)
-
-# Use the cutting shape to cut the currently selected surface.
-cutObject = knifeProject(originalySelectedObject, cuttingShape)
-
-# Delete the no longer needed cutting shape.
-dataToRemove = cuttingShape.data
-bpy.data.objects.remove(cuttingShape)
-bpy.data.meshes.remove(dataToRemove)
-
-# Crease the cut surface.
-addCutCrease(cutObject)
+    # Cut a plate in the selected object.
+    cutPlate(originalySelectedObject)
+    
