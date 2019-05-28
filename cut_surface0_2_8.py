@@ -17,9 +17,7 @@ if blend_dir not in sys.path:
    sys.path.append(blend_dir)
 
 import generate_cuttingShape0_2_8
-
 importlib.reload(generate_cuttingShape0_2_8)
-
 from generate_cuttingShape0_2_8 import *
 
 
@@ -139,7 +137,7 @@ def cutPlate(surfaceToCut):
     cuttingShape = generateRectangleCuttingShape(seed=2, position=(0, 0, 0), dimension=(3, 0.5), recursionDepth=0)
 
     # Use the cutting shape to cut the currently selected surface.
-    cutObject = knifeProject(surfaceToCut, cuttingShape)
+    knifeProject(surfaceToCut, cuttingShape)
 
     # Delete the no longer needed cutting shape.
     dataToRemove = cuttingShape.data
@@ -147,7 +145,7 @@ def cutPlate(surfaceToCut):
     bpy.data.meshes.remove(dataToRemove)
 
     # Crease the cut surface.
-    addCutCrease(cutObject)
+    addCutCrease(surfaceToCut)
 
 
 # Test function
