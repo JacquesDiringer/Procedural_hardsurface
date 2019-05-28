@@ -129,15 +129,47 @@ def addCutCrease(surfaceToCrease):
     
     # Go back to object mode.
     bpy.ops.object.mode_set(mode = 'OBJECT')
+    
+    
+# Computes the borders of a given face.
+# The face should be a rectangular quad.
+def rectangleBorders(face):
+    minX = sys.float_info.max
+    maxX = -sys.float_info.max
+    minY = sys.float_info.max
+    maxY = -sys.float_info.max
+    
+    for currentVertexIndex in face.vertices:
+        currentVertex = face.id_data.vertices[currentVertexIndex]
+        if currentVertex.co.x < minX:
+            minX = currentVertex.co.x
+        if currentVertex.co.x > maxX:
+            maxX = currentVertex.co.x
+        if currentVertex.co.y < minY:
+            minY = currentVertex.co.y
+        if currentVertex.co.y > maxY:
+            maxY = currentVertex.co.y
+    
+    return (minX, maxX, minY, maxY)
 
 # Cuts a random shape in a surface, then gives it a crease to make it look like a plate.
-def cutPlate(surfaceToCut):
+def cutPlate(objectToCut, faceToCut):
+    
+    rectDimension = rectangleBorders(faceToCut)
+    
+    rectDimension = (rectDimension[0] * objectToCut.scale.x, rectDimension[1] * objectToCut.scale.x, rectDimension[2] * objectToCut.scale.y, rectDimension[3] *objectToCut.scale.y)
+    
+    faceWidth   = rectDimension[1] - rectDimension[0]
+    faceHeight  = rectDimension[3] - rectDimension[2]
+    facePosition = ((rectDimension[1] + rectDimension[0]) * 0.5, (rectDimension[3] + rectDimension[2]) * 0.5, 0)
+    
+    print("face dimension = " + str(rectDimension))
 
     # Generate a cutting shape
-    cuttingShape = generateRectangleCuttingShape(seed=2, position=(0, 0, 0), dimension=(3, 0.5), recursionDepth=0)
+    cuttingShape = generateRectangleCuttingShape(seed=2, position=facePosition, dimension=(faceWidth * 0.9, faceHeight * 0.9), recursionDepth=0)
 
     # Use the cutting shape to cut the currently selected surface.
-    knifeProject(surfaceToCut, cuttingShape)
+    knifeProject(objectToCut, cuttingShape)
 
     # Delete the no longer needed cutting shape.
     dataToRemove = cuttingShape.data
@@ -145,7 +177,7 @@ def cutPlate(surfaceToCut):
     bpy.data.meshes.remove(dataToRemove)
 
     # Crease the cut surface.
-    addCutCrease(surfaceToCut)
+    addCutCrease(objectToCut)
 
 
 # Test function
@@ -154,5 +186,5 @@ if __name__ == "__main__":
     originalySelectedObject = bpy.context.active_object
 
     # Cut a plate in the selected object.
-    cutPlate(originalySelectedObject)
+    cutPlate(originalySelectedObject, originalySelectedObject.data.polygons[0])
     
