@@ -4,6 +4,7 @@ import bmesh
 import mathutils
 import random
 from datetime import datetime
+from datetime import datetime
 from mathutils import Euler
 
 # Import submodules.
@@ -88,20 +89,26 @@ def knifeProject(surfaceToCut, surfaceCuter):
 
     # Force redraw the scene - this is considered unsavory but is necessary here.
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-
+    
     # The knife project has to be used in edit mode.
     bpy.ops.object.mode_set(mode = 'EDIT')
 
     # Knife cutting operation.
     bpy.ops.mesh.knife_project(override)
-
-    # Go back to object mode.
+    
+    # Go back to object mode. This forces an update of the mesh's internal data.
     bpy.ops.object.mode_set(mode = 'OBJECT')
+    
+    # Keep the selected face resulting from the knife project.
+    resultingPolygon = None
+    for currentPolygon in surfaceToCut.data.polygons:
+        if currentPolygon.select:
+            resultingPolygon = currentPolygon
     
     # Reset the view to it's configuration before the knife project.
     setRegion3D(override, originalRegion3D)
     
-    return bpy.context.active_object
+    return resultingPolygon
 
 
 # Adds a crease in a surface, to simulate metal plates joining.
@@ -162,11 +169,11 @@ def cutPlate(objectToCut, faceToCut):
     faceWidth   = rectDimension[1] - rectDimension[0]
     faceHeight  = rectDimension[3] - rectDimension[2]
     facePosition = ((rectDimension[1] + rectDimension[0]) * 0.5, (rectDimension[3] + rectDimension[2]) * 0.5, 0)
-    
-    print("face dimension = " + str(rectDimension))
+
+    random.seed(datetime.now())
 
     # Generate a cutting shape
-    cuttingShape = generateRectangleCuttingShape(seed=2, position=facePosition, dimension=(faceWidth * 0.9, faceHeight * 0.9), recursionDepth=0)
+    cuttingShape = generateRectangleCuttingShape(seed=random.randint(0, 100000), position=facePosition, dimension=(faceWidth * 0.9, faceHeight * 0.9), recursionDepth=0)
 
     # Use the cutting shape to cut the currently selected surface.
     knifeProject(objectToCut, cuttingShape)
@@ -175,9 +182,31 @@ def cutPlate(objectToCut, faceToCut):
     dataToRemove = cuttingShape.data
     bpy.data.objects.remove(cuttingShape)
     bpy.data.meshes.remove(dataToRemove)
-
+    
     # Crease the cut surface.
     addCutCrease(objectToCut)
+    
+    
+    ## Cut the surface again to have a clean surface to work with again.
+    # Generate a plane cutting shape.
+    bpy.ops.mesh.primitive_plane_add(size=0.5, view_align=False, enter_editmode=True, location=(facePosition))
+    bpy.ops.transform.resize(value=(faceWidth, faceHeight, 1), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL')
+    # Go back to object mode.
+    bpy.ops.object.mode_set(mode = 'OBJECT')
+ 
+    # The cutting plane is the active object.
+    cuttingShape = bpy.context.active_object
+    
+    # Use the cutting shape to cut the currently selected surface.
+    resultingFace = knifeProject(objectToCut, cuttingShape)
+    
+    # Delete the no longer needed cutting shape.
+    dataToRemove = cuttingShape.data
+    bpy.data.objects.remove(cuttingShape)
+    bpy.data.meshes.remove(dataToRemove)
+
+    return resultingFace
+
 
 
 # Test function
@@ -186,5 +215,5 @@ if __name__ == "__main__":
     originalySelectedObject = bpy.context.active_object
 
     # Cut a plate in the selected object.
-    cutPlate(originalySelectedObject, originalySelectedObject.data.polygons[0])
+    resultingFace = cutPlate(originalySelectedObject, originalySelectedObject.data.polygons[0])
     
