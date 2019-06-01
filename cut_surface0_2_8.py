@@ -4,7 +4,6 @@ import bmesh
 import mathutils
 import random
 from datetime import datetime
-from datetime import datetime
 from mathutils import Euler
 
 # Import submodules.
@@ -160,7 +159,10 @@ def rectangleBorders(face):
     return (minX, maxX, minY, maxY)
 
 # Cuts a random shape in a surface, then gives it a crease to make it look like a plate.
-def cutPlate(objectToCut, faceToCut):
+def cutPlate(seed, objectToCut, faceToCut):
+    
+    # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
+    random.seed(seed)
     
     rectDimension = rectangleBorders(faceToCut)
     
@@ -169,8 +171,6 @@ def cutPlate(objectToCut, faceToCut):
     faceWidth   = rectDimension[1] - rectDimension[0]
     faceHeight  = rectDimension[3] - rectDimension[2]
     facePosition = ((rectDimension[1] + rectDimension[0]) * 0.5, (rectDimension[3] + rectDimension[2]) * 0.5, 0)
-
-    random.seed(datetime.now())
 
     # Generate a cutting shape
     cuttingShape = generateRectangleCuttingShape(seed=random.randint(0, 100000), position=facePosition, dimension=(faceWidth * 0.9, faceHeight * 0.9), recursionDepth=0)
@@ -215,5 +215,4 @@ if __name__ == "__main__":
     originalySelectedObject = bpy.context.active_object
 
     # Cut a plate in the selected object.
-    resultingFace = cutPlate(originalySelectedObject, originalySelectedObject.data.polygons[0])
-    
+    resultingFace = cutPlate(datetime.now(), originalySelectedObject, originalySelectedObject.data.polygons[0])
