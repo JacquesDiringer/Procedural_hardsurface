@@ -9,7 +9,7 @@ from datetime import datetime
 from mathutils import Euler
 
 minCuts = 1 # Minimum number of cuts per subdivision.
-maxCuts = 2 # Maximum number of cuts per subdivision.
+maxCuts = 4 # Maximum number of cuts per subdivision.
 verticalProbability = 0.5 # Probability of doing a vertical subdivision.
 
 def findEdge(mesh, edgeKey):
@@ -74,22 +74,28 @@ def subdivideGeneric(seed, objectToSubdivide, faceTuple):
     # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
     random.seed(seed)
     
-    print("objectToSubdivide : " + str(objectToSubdivide))
-    
     # Find the right face despit faces that have been reindexed.
     if checkIsSameFace(objectToSubdivide, faceTuple):
         faceToSubdivideIndex = faceTuple[0]
     else:
         faceToSubdivideIndex = findFaceByVertices(objectToBrowse, faceTuple[1])
     
+    bpy.ops.object.mode_set(mode = 'EDIT')
+    # Deselect everything.
+    bpy.ops.mesh.select_all(action='DESELECT')
+    
+    # Selecting faces only works when not in edit mode, for some reason.
+    bpy.ops.object.mode_set(mode = 'OBJECT')
+    # Select only the face to inset.
+    objectToSubdivide.data.polygons[faceToSubdivideIndex].select = True
+    
     # Enter edit mode for the object in argument.
     bpy.context.view_layer.objects.active = objectToSubdivide
-    print("before entering edit mode")
     bpy.ops.object.mode_set(mode = 'EDIT')
     
-    bpy.ops.mesh.inset(use_boundary=True, use_even_offset=True, use_relative_offset=True, use_edge_rail=False, thickness=0.001, depth=0, use_outset=False, use_select_inset=False, use_individual=False, use_interpolate=True)
+    bpy.ops.mesh.inset(thickness=0.0001)
     
-    # Deselect everything.
+    # Deselect everything again.
     bpy.ops.mesh.select_all(action='DESELECT')
     
     bpy.ops.object.mode_set(mode = 'OBJECT')
@@ -97,25 +103,13 @@ def subdivideGeneric(seed, objectToSubdivide, faceTuple):
     objectToSubdivide.data.validate(verbose=True)
     objectToSubdivide.update_from_editmode()    
     
-    
-    print("faceToSubdivideIndex : " + str(faceToSubdivideIndex))
-    # TODO : test how the indexes change for the face.
     faceToSubdivide = objectToSubdivide.data.polygons[faceToSubdivideIndex]
-    
-    print("faceToSubdivide : " + str(faceToSubdivide))
-    print("faceToSubdivide vertices : " + str(faceToSubdivide.vertices))
-    print("faceToSubdivide vertices length = " + str(len(faceToSubdivide.vertices)))
-    
-    #try:
-    print("face edges count = " + str(len(faceToSubdivide.edge_keys)))
-    
-    #for currentEdgeKey in faceToSubdivide.edge_keys:
-        #print("edgeKey = " + str(currentEdgeKey))
-    
+
     if len(faceToSubdivide.edge_keys) != 4:
         print("Face does not have 4 edges.")
         return
     
+    # Randomly choose if the cut if going to be vertical or horizontal.
     if random.uniform(0, 1) < verticalProbability:
         aEdgeKey = faceToSubdivide.edge_keys[0]
         bEdgeKey = faceToSubdivide.edge_keys[2]
@@ -123,37 +117,29 @@ def subdivideGeneric(seed, objectToSubdivide, faceTuple):
         aEdgeKey = faceToSubdivide.edge_keys[1]
         bEdgeKey = faceToSubdivide.edge_keys[3]
     
-    #print("aEdgeKey = " + str(aEdgeKey))
-    #print("bEdgeKey = " + str(bEdgeKey))
-    
+    # Find the chosen edges in the object's data.
     aEdge = findEdge(objectToSubdivide.data, aEdgeKey)
     bEdge = findEdge(objectToSubdivide.data, bEdgeKey)
     
+    # Select the chosen edges. Be careful, edges can only be selected properly when in object mode.
     aEdge.select = True
     bEdge.select = True
 
     bpy.ops.object.mode_set(mode = 'EDIT')
+    # Randomly choose how many cuts are going to be applied.
     numberOfCuts = random.randint(minCuts, maxCuts)
+    # Apply the subdivision.
     bpy.ops.mesh.subdivide(number_cuts=numberOfCuts, quadcorner='INNERVERT')
     
-    #objectToSubdivide.data.update()
+    # Refresh data.
     objectToSubdivide.data.validate(verbose=True)
     objectToSubdivide.update_from_editmode()
     
-#    resultingFacesIndexes = [currentPolygon.index for currentPolygon in objectToSubdivide.data.polygons if currentPolygon.select]
-    
-    
+    # Return an array of face tuples for the selected faces.
+    # The selected faces are the ones resulting of the subdivision.
     faceTuplesResult = [buildFaceTuple(objectToSubdivide, currentPolygon.index) for currentPolygon in objectToSubdivide.data.polygons if currentPolygon.select]
-    
-    #faceTupleResult = []
-    #for currentFace in resultingFaces:
-        #faceTupleResult.append((currentFace.index, currentFace.vertices))
 
-    return faceTuplesResult 
-    
-    #except :
-        #print("Exception handled")
-        #return None
+    return faceTuplesResult
 
 
 # Test function
@@ -161,14 +147,8 @@ if __name__ == "__main__":
     # Keep track of the selected object.
     originalySelectedObject = bpy.context.active_object
     
-    #bpy.ops.object.mode_set(mode = 'OBJECT')
-    #bpy.ops.object.mode_set(mode = 'EDIT')
-    
-    #originalySelectedObject.data.update()
     originalySelectedObject.data.validate(verbose=True)
     originalySelectedObject.update_from_editmode()
-    
-    print("originalySelectedObject : " + str(originalySelectedObject))
     
     for currentPolygon in originalySelectedObject.data.polygons:
         if currentPolygon.select:

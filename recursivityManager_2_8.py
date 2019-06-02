@@ -26,6 +26,20 @@ import subdivide_surface_2_8
 importlib.reload(subdivide_surface_2_8)
 from subdivide_surface_2_8 import *
 
+
+subdivisionProbability = 0.8
+
+
+
+def subdivideFaces(objectToBrowse, facesTuples):
+    recursivesFacesTuples = []
+    for currentFaceTuple in facesTuples:
+        if random.uniform(0, 1) < subdivisionProbability:
+            generatedFacesTuples = subdivideGeneric(datetime.now(), objectToBrowse, currentFaceTuple)
+            recursivesFacesTuples.extend(generatedFacesTuples)
+        
+    return recursivesFacesTuples
+
     
 # Test function
 if __name__ == "__main__":
@@ -38,49 +52,20 @@ if __name__ == "__main__":
     #resultingFace = cutPlate(datetime.now(), originalySelectedObject, resultingFace)
     #resultingFace = cutPlate(datetime.now(), originalySelectedObject, resultingFace)
     
+    
 #    datetime.now()
     firstPolygon = originalySelectedObject.data.polygons[0]
-    resultingFacesIndexes = subdivideGeneric(datetime.now(), originalySelectedObject, buildFaceTuple(originalySelectedObject, firstPolygon.index))
     
-    print("resultingFacesIndexes : " + str(resultingFacesIndexes))
+    resultingFacesTuples = subdivideFaces(originalySelectedObject, [buildFaceTuple(originalySelectedObject, firstPolygon.index)])
     
-    bpy.ops.object.mode_set(mode = 'EDIT')
-    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-#    time.sleep(1)
+    resultingFacesTuples = subdivideFaces(originalySelectedObject, resultingFacesTuples)
+    resultingFacesTuples = subdivideFaces(originalySelectedObject, resultingFacesTuples)
+    resultingFacesTuples = subdivideFaces(originalySelectedObject, resultingFacesTuples)
+    resultingFacesTuples = subdivideFaces(originalySelectedObject, resultingFacesTuples)
+    
 
-    print()
-    print()
-    
-    recursivesFacesIndexes = []
-    
-    for currentFaceTuple in resultingFacesIndexes:
-        generatedFacesIndexes = subdivideGeneric(datetime.now(), originalySelectedObject, buildFaceTuple(originalySelectedObject, currentFaceTuple[0]))
-        print("generatedFacesIndexes : " + str(generatedFacesIndexes))
-        recursivesFacesIndexes.extend(generatedFacesIndexes)
-        print("recursivesFacesIndexes : " + str(recursivesFacesIndexes))
-        print()
-        
-        bpy.ops.object.mode_set(mode = 'EDIT')
-        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-        #time.sleep(1)
-    
-    print()
-    print()
-        
-    for currentFaceTuple in recursivesFacesIndexes:
-        generatedFacesIndexes = subdivideGeneric(datetime.now(), originalySelectedObject, buildFaceTuple(originalySelectedObject, currentFaceTuple[0]))
-        print("generatedFacesIndexes 2 : " + str(generatedFacesIndexes))
-        print()
-#        resultingFace = cutPlate(datetime.now(), originalySelectedObject, currentFace)
-#        recursivesFaces.append(generatedFaces)
-
-        bpy.ops.object.mode_set(mode = 'EDIT')
-        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-#        time.sleep(0.5)
 
     bpy.ops.object.mode_set(mode = 'EDIT')
-    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-#    time.sleep(1)
     
     override, originalRegion3D = createOverrideContext()
     
