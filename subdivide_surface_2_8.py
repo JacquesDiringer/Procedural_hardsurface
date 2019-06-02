@@ -30,10 +30,12 @@ def subdivideGeneric(seed, objectToSubdivide, faceTuple):
     random.seed(seed)
     
     # Find the right face despit faces that have been reindexed.
-    if checkIsSameFace(objectToSubdivide, faceTuple):
-        faceToSubdivideIndex = faceTuple[0]
-    else:
-        faceToSubdivideIndex = findFaceByVertices(objectToBrowse, faceTuple[1])
+    #if checkIsSameFace(objectToSubdivide, faceTuple):
+        #faceToSubdivideIndex = faceTuple[0]
+    #else:
+        #faceToSubdivideIndex = findFaceByVertices(objectToSubdivide, faceTuple[1])
+
+    faceToSubdivideIndex = faceTuple[0]
     
     bpy.ops.object.mode_set(mode = 'EDIT')
     # Deselect everything.

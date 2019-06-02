@@ -26,19 +26,33 @@ import subdivide_surface_2_8
 importlib.reload(subdivide_surface_2_8)
 from subdivide_surface_2_8 import *
 
+# Insets.
+import inset_surface_2_8
+importlib.reload(inset_surface_2_8)
+from inset_surface_2_8 import *
+
     
-subdivisionProbability = 0.8
+subdivisionProbability = 0.9
+insetProbability = 0.5
 
 
 
 def subdivideFaces(objectToBrowse, facesTuples):
-    recursivesFacesTuples = []
+    totalFacesTuples = []
     for currentFaceTuple in facesTuples:
         if random.uniform(0, 1) < subdivisionProbability:
             generatedFacesTuples = subdivideGeneric(datetime.now(), objectToBrowse, currentFaceTuple)
-            recursivesFacesTuples.extend(generatedFacesTuples)
+            totalFacesTuples.extend(generatedFacesTuples)
+    
+    resultFacesTuples = []
+    for currentFaceTuple in totalFacesTuples:
+        if random.uniform(0, 1) < insetProbability:
+            generatedFacesTuples = insetGeneric(datetime.now(), objectToBrowse, currentFaceTuple)
+            resultFacesTuples.extend(generatedFacesTuples)
+        else:
+            resultFacesTuples.append(currentFaceTuple)
         
-    return recursivesFacesTuples
+    return resultFacesTuples
 
     
 # Test function
