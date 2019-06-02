@@ -16,7 +16,7 @@ blend_dir = os.path.dirname(bpy.data.filepath)
 if blend_dir not in sys.path:
    sys.path.append(blend_dir)
 
-# Surface cutting.
+# Surface cutting.  
 import cut_surface0_2_8
 importlib.reload(cut_surface0_2_8)
 from cut_surface0_2_8 import *
@@ -26,7 +26,7 @@ import subdivide_surface_2_8
 importlib.reload(subdivide_surface_2_8)
 from subdivide_surface_2_8 import *
 
-
+    
 subdivisionProbability = 0.8
 
 

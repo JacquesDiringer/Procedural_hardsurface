@@ -16,66 +16,15 @@ blend_dir = os.path.dirname(bpy.data.filepath)
 if blend_dir not in sys.path:
    sys.path.append(blend_dir)
 
+# Cutting shapes generation.
 import generate_cuttingShape0_2_8
 importlib.reload(generate_cuttingShape0_2_8)
 from generate_cuttingShape0_2_8 import *
 
-
-
-def view3d_find( return_area = False ):
-    # returns first 3d view, normally we get from context
-    for area in bpy.context.window.screen.areas:
-        if area.type == 'VIEW_3D':
-            v3d = area.spaces[0]
-            rv3d = v3d.region_3d
-            for region in area.regions:
-                if region.type == 'WINDOW':
-                    if return_area: return region, rv3d, v3d, area
-                    return region, rv3d, v3d
-    return None, None
-
-def createOverrideContext():
-    region, rv3d, v3d, area = view3d_find(True)
-
-    # Define context override dictionary for overriding the knife_project operator's context
-    override = {
-        'scene'            : bpy.context.scene,
-        'region'           : region,
-        'area'             : area,
-        'space'            : v3d,
-        'active_object'    : bpy.context.object,
-        'window'           : bpy.context.window,
-        'screen'           : bpy.context.screen,
-        'selected_objects' : bpy.context.selected_objects,
-        'edit_object'      : bpy.context.object,
-        'region_3d'        : rv3d
-    }
-    
-    originalRegion3D = {
-        'view_location'     : copy.copy(rv3d.view_location),
-        'view_distance'     : rv3d.view_distance,
-        'view_rotation'     : copy.copy(rv3d.view_rotation),
-        'view_perspective'  : rv3d.view_perspective}
-    
-    # Set the view to origin with a small distance so that we have a better precision for the knife projection.
-    rv3d.view_location = (0,0,0)
-    rv3d.view_distance = 1
-    
-    # Set view to TOP by directly rotating the 3D view region's view_rotation.
-    rv3d.view_rotation = Euler( (0,0,0) ).to_quaternion()
-    
-    # Set the canera to orthographic.
-    rv3d.view_perspective = 'ORTHO'
-    
-    return override, originalRegion3D
-
-def setRegion3D(override, originalConfiguration):
-    rv3d = override['region_3d']
-    
-    rv3d.view_location      = originalConfiguration['view_location']
-    rv3d.view_distance      = originalConfiguration['view_distance']
-    rv3d.view_rotation      = originalConfiguration['view_rotation']
-    rv3d.view_perspective   = originalConfiguration['view_perspective']
+# Utils.
+import utils
+importlib.reload(utils)
+from utils import *
 
 
 def knifeProject(surfaceToCut, surfaceCuter):
