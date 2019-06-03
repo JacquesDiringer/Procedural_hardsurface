@@ -7,6 +7,7 @@ import random
 import time
 from datetime import datetime
 from mathutils import Euler
+from math import sqrt
 
 
 
@@ -69,6 +70,13 @@ def setRegion3D(override, originalConfiguration):
     rv3d.view_perspective   = originalConfiguration['view_perspective']
     
     
+
+### Quick math. ###
+
+def distance(aVert, bVert):
+    return sqrt((aVert.x - bVert.x)**2 + (aVert.y - bVert.y)**2 + (aVert.z - bVert.z)**2)
+    
+    
 ### Handling meshes. ###
 
 
@@ -77,6 +85,12 @@ def findEdge(mesh, edgeKey):
         currentEdgeKey = currentEdge.key
         if (currentEdgeKey[0] == edgeKey[0] and currentEdgeKey[1] == edgeKey[1]):
             return currentEdge
+        
+def findEdgeIndex(mesh, edgeKey):
+    for currentEdge in mesh.edges:
+        currentEdgeKey = currentEdge.key
+        if (currentEdgeKey[0] == edgeKey[0] and currentEdgeKey[1] == edgeKey[1]):
+            return currentEdge.index
         
 
 def buildFaceTuple(objectToBrowse, faceIndex):
@@ -89,7 +103,6 @@ def buildFaceTuple(objectToBrowse, faceIndex):
         verticesArray.append((currentCoordinates.x, currentCoordinates.y, currentCoordinates.z))
     
     return (faceIndex, verticesArray)
-
 
 
 # The face tuple should contain first the index of the face, then an array of vertices.

@@ -36,13 +36,17 @@ subdivisionProbability = 0.9
 insetProbability = 0.5
 
 
+# Parameters for other modules.
+subdivide_surface_2_8.minimumLength = 0.05
+
 
 def subdivideFaces(objectToBrowse, facesTuples):
     totalFacesTuples = []
     for currentFaceTuple in facesTuples:
         if random.uniform(0, 1) < subdivisionProbability:
             generatedFacesTuples = subdivideGeneric(datetime.now(), objectToBrowse, currentFaceTuple)
-            totalFacesTuples.extend(generatedFacesTuples)
+            if(generatedFacesTuples is not None):
+                totalFacesTuples.extend(generatedFacesTuples)
     
     resultFacesTuples = []
     for currentFaceTuple in totalFacesTuples:
@@ -57,29 +61,40 @@ def subdivideFaces(objectToBrowse, facesTuples):
     
 # Test function
 if __name__ == "__main__":
-    # Keep track of the selected object.
-    originalySelectedObject = bpy.context.active_object
+    
+    squareSize = 4
+    
+    for xCoords in range(0, squareSize):
+        for yCoords in range(0, squareSize):
+            
+            bpy.ops.mesh.primitive_plane_add(size=0.95, view_align=False, enter_editmode=False, location=(xCoords, yCoords, 0))
+            
+        
+            # Keep track of the selected object.
+            originalySelectedObject = bpy.context.active_object
 
-    # Cut a plate in the selected object.
-    #resultingFace = cutPlate(datetime.now(), originalySelectedObject, originalySelectedObject.data.polygons[0])
-    #resultingFace = cutPlate(datetime.now(), originalySelectedObject, resultingFace)
-    #resultingFace = cutPlate(datetime.now(), originalySelectedObject, resultingFace)
-    #resultingFace = cutPlate(datetime.now(), originalySelectedObject, resultingFace)
-    
-    
-#    datetime.now()
-    firstPolygon = originalySelectedObject.data.polygons[0]
-    
-    resultingFacesTuples = subdivideFaces(originalySelectedObject, [buildFaceTuple(originalySelectedObject, firstPolygon.index)])
-    
-    resultingFacesTuples = subdivideFaces(originalySelectedObject, resultingFacesTuples)
-    resultingFacesTuples = subdivideFaces(originalySelectedObject, resultingFacesTuples)
-    resultingFacesTuples = subdivideFaces(originalySelectedObject, resultingFacesTuples)
-    resultingFacesTuples = subdivideFaces(originalySelectedObject, resultingFacesTuples)
+            # Cut a plate in the selected object.
+            #resultingFace = cutPlate(datetime.now(), originalySelectedObject, originalySelectedObject.data.polygons[0])
+            #resultingFace = cutPlate(datetime.now(), originalySelectedObject, resultingFace)
+            #resultingFace = cutPlate(datetime.now(), originalySelectedObject, resultingFace)
+            #resultingFace = cutPlate(datetime.now(), originalySelectedObject, resultingFace)
+            
+            
+        #    datetime.now()
+            firstPolygon = originalySelectedObject.data.polygons[0]
+            
+            resultingFacesTuples = subdivideFaces(originalySelectedObject, [buildFaceTuple(originalySelectedObject, firstPolygon.index)])
+            
+            resultingFacesTuples = subdivideFaces(originalySelectedObject, resultingFacesTuples)
+            resultingFacesTuples = subdivideFaces(originalySelectedObject, resultingFacesTuples)
+            resultingFacesTuples = subdivideFaces(originalySelectedObject, resultingFacesTuples)
+            resultingFacesTuples = subdivideFaces(originalySelectedObject, resultingFacesTuples)
+            
+            bpy.ops.object.mode_set(mode = 'OBJECT')
     
 
 
-    bpy.ops.object.mode_set(mode = 'EDIT')
+#    bpy.ops.object.mode_set(mode = 'EDIT')
     
     override, originalRegion3D = createOverrideContext()
     

@@ -63,6 +63,10 @@ def insetGeneric(seed, objectToInset, faceTuple):
     # Perform the inset operation.
     bpy.ops.mesh.inset(thickness=insetThickness, depth=finalDepth, use_relative_offset=insetRelativeOffset)
     
+    # Refresh data.
+    objectToInset.data.validate(verbose=True)
+    objectToInset.update_from_editmode()
+    
     # Return an array of face tuples for the selected face.
     # The selected face is the one resulting of the inset.
     faceTuplesResult = [buildFaceTuple(objectToInset, currentPolygon.index) for currentPolygon in objectToInset.data.polygons if currentPolygon.select]

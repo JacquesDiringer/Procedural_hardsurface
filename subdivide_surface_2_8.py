@@ -19,9 +19,20 @@ importlib.reload(utils)
 from utils import *
 
 
+# Global parameters.
 minCuts = 1 # Minimum number of cuts per subdivision.
 maxCuts = 4 # Maximum number of cuts per subdivision.
 verticalProbability = 0.5 # Probability of doing a vertical subdivision.
+
+# Conditions
+minimumLength = 0.2
+
+
+# Should be in object mode when calling this function.
+def findFirstSelectedPolygon(objectToSubdivide):
+    for currentPolygon in objectToSubdivide.data.polygons:
+        if currentPolygon.select:
+            return currentPolygon
 
 
 def subdivideGeneric(seed, objectToSubdivide, faceTuple):
@@ -36,6 +47,30 @@ def subdivideGeneric(seed, objectToSubdivide, faceTuple):
         #faceToSubdivideIndex = findFaceByVertices(objectToSubdivide, faceTuple[1])
 
     faceToSubdivideIndex = faceTuple[0]
+    faceToSubdivide = objectToSubdivide.data.polygons[faceToSubdivideIndex]
+    
+    # Sanity check.
+    if len(faceToSubdivide.edge_keys) != 4:
+        print("Face does not have 4 edges.")
+        return
+    
+    # Decide whether the subidivision is to happen vertically of horizontally.
+    if random.uniform(0, 1) < verticalProbability:
+        verticalSubdivision = True
+    else:
+        verticalSubdivision = False
+    
+    if verticalSubdivision:
+        aEdgeKey = faceToSubdivide.edge_keys[0]
+    else:
+        aEdgeKey = faceToSubdivide.edge_keys[1]
+    
+    # Minimum length test.
+    point0Coordinates = objectToSubdivide.data.vertices[aEdgeKey[0]].co
+    point1Coordinates = objectToSubdivide.data.vertices[aEdgeKey[1]].co
+    edgeLength = distance(point0Coordinates, point1Coordinates)
+    if edgeLength < minimumLength:
+        return None
     
     bpy.ops.object.mode_set(mode = 'EDIT')
     # Deselect everything.
@@ -52,41 +87,39 @@ def subdivideGeneric(seed, objectToSubdivide, faceTuple):
     
     bpy.ops.mesh.inset(thickness=0.0001)
     
-    # Deselect everything again.
-    bpy.ops.mesh.select_all(action='DESELECT')
-    
     bpy.ops.object.mode_set(mode = 'OBJECT')
+    faceToSubdivide_inset = findFirstSelectedPolygon(objectToSubdivide)
     
-    objectToSubdivide.data.validate(verbose=True)
-    objectToSubdivide.update_from_editmode()    
-    
-    faceToSubdivide = objectToSubdivide.data.polygons[faceToSubdivideIndex]
-
-    if len(faceToSubdivide.edge_keys) != 4:
-        print("Face does not have 4 edges.")
-        return
-    
-    # Randomly choose if the cut if going to be vertical or horizontal.
-    if random.uniform(0, 1) < verticalProbability:
-        aEdgeKey = faceToSubdivide.edge_keys[0]
-        bEdgeKey = faceToSubdivide.edge_keys[2]
+    if verticalSubdivision:
+        aEdgeKey_inset = faceToSubdivide_inset.edge_keys[0]
+        bEdgeKey_inset = faceToSubdivide_inset.edge_keys[2]
     else:
-        aEdgeKey = faceToSubdivide.edge_keys[1]
-        bEdgeKey = faceToSubdivide.edge_keys[3]
+        aEdgeKey_inset = faceToSubdivide_inset.edge_keys[1]
+        bEdgeKey_inset = faceToSubdivide_inset.edge_keys[3]
     
     # Find the chosen edges in the object's data.
-    aEdge = findEdge(objectToSubdivide.data, aEdgeKey)
-    bEdge = findEdge(objectToSubdivide.data, bEdgeKey)
+    aEdge_inset = findEdge(objectToSubdivide.data, aEdgeKey_inset)
+    bEdge_inset = findEdge(objectToSubdivide.data, bEdgeKey_inset)
+    
+    # Deselect all the faces.
+    bpy.ops.object.mode_set(mode = 'EDIT')
+    bpy.ops.mesh.select_all(action='DESELECT')
+    
+    # Find the index of the edges to select.
+    # We get the index rather than the edge itself because of references issues.
+    aEdgeIndex_inset = findEdgeIndex(objectToSubdivide.data, aEdgeKey_inset)
+    bEdgeIndex_inset = findEdgeIndex(objectToSubdivide.data, bEdgeKey_inset)
     
     # Select the chosen edges. Be careful, edges can only be selected properly when in object mode.
-    aEdge.select = True
-    bEdge.select = True
+    bpy.ops.object.mode_set(mode = 'OBJECT')
+    objectToSubdivide.data.edges[aEdgeIndex_inset].select = True
+    objectToSubdivide.data.edges[bEdgeIndex_inset].select = True
 
     bpy.ops.object.mode_set(mode = 'EDIT')
     # Randomly choose how many cuts are going to be applied.
     numberOfCuts = random.randint(minCuts, maxCuts)
     # Apply the subdivision.
-    bpy.ops.mesh.subdivide(number_cuts=numberOfCuts, quadcorner='INNERVERT')
+    subdivisionResult = bpy.ops.mesh.subdivide(number_cuts=numberOfCuts, quadcorner='INNERVERT')
     
     # Refresh data.
     objectToSubdivide.data.validate(verbose=True)
