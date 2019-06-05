@@ -86,9 +86,10 @@ def addCutCrease(surfaceToCrease):
     bpy.ops.object.mode_set(mode = 'OBJECT')
     
     
-# Computes the borders of a given face.
+# Computes the borders of a given face in world space. This includes the size of the parent object.
 # The face should be a rectangular quad.
-def rectangleBorders(face):
+# Warning: This algorithm assumes that the face is axis aligned.
+def rectangleBorders(parentObject, face):
     minX = sys.float_info.max
     maxX = -sys.float_info.max
     minY = sys.float_info.max
@@ -96,36 +97,26 @@ def rectangleBorders(face):
     
     for currentVertexIndex in face.vertices:
         currentVertex = face.id_data.vertices[currentVertexIndex]
-        if currentVertex.co.x < minX:
-            minX = currentVertex.co.x
-        if currentVertex.co.x > maxX:
-            maxX = currentVertex.co.x
-        if currentVertex.co.y < minY:
-            minY = currentVertex.co.y
-        if currentVertex.co.y > maxY:
-            maxY = currentVertex.co.y
+        currentWorldCoords = parentObject.matrix_world @ currentVertex.co
+        if currentWorldCoords.x < minX:
+            minX = currentWorldCoords.x
+        if currentWorldCoords.x > maxX:
+            maxX = currentWorldCoords.x
+        if currentWorldCoords.y < minY:
+            minY = currentWorldCoords.y
+        if currentWorldCoords.y > maxY:
+            maxY = currentWorldCoords.y
     
     return (minX, maxX, minY, maxY)
 
 # Cuts a random shape in a surface, then gives it a crease to make it look like a plate.
-def cutPlate(seed, objectToCut, faceToCut):
+def cutPlate(seed, objectToCut, faceToCut, cuttingShape):
     
     # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
     random.seed(seed)
-    
-    rectDimension = rectangleBorders(faceToCut)
-    
-    rectDimension = (rectDimension[0] * objectToCut.scale.x, rectDimension[1] * objectToCut.scale.x, rectDimension[2] * objectToCut.scale.y, rectDimension[3] *objectToCut.scale.y)
-    
-    faceWidth   = rectDimension[1] - rectDimension[0]
-    faceHeight  = rectDimension[3] - rectDimension[2]
-    facePosition = ((rectDimension[1] + rectDimension[0]) * 0.5, (rectDimension[3] + rectDimension[2]) * 0.5, 0)
-
-    # Generate a cutting shape
-    cuttingShape = generateRectangleCuttingShape(seed=random.randint(0, 100000), position=facePosition, dimension=(faceWidth * 0.9, faceHeight * 0.9), recursionDepth=0)
 
     # Use the cutting shape to cut the currently selected surface.
-    knifeProject(objectToCut, cuttingShape)
+    resultingFace = knifeProject(objectToCut, cuttingShape)
 
     # Delete the no longer needed cutting shape.
     dataToRemove = cuttingShape.data
@@ -134,9 +125,33 @@ def cutPlate(seed, objectToCut, faceToCut):
     
     # Crease the cut surface.
     addCutCrease(objectToCut)
+
+    return resultingFace
+
+
+# The responsibility of this function is to generate the cutting shape and place it correctly for the cutPlate function.
+# It should then cut the inner rectangle to enable recursivity.
+def genericCutPlate(seed, objectToCut, faceToCut):
+    
+    # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
+    random.seed(seed)
+    
+    rectDimension = rectangleBorders(objectToCut, faceToCut)
+    
+    rectDimension = (rectDimension[0], rectDimension[1], rectDimension[2], rectDimension[3])
+    
+    faceWidth   = rectDimension[1] - rectDimension[0]
+    faceHeight  = rectDimension[3] - rectDimension[2]
+    facePosition = ((rectDimension[1] + rectDimension[0]) * 0.5, (rectDimension[3] + rectDimension[2]) * 0.5, 0)
+
+    # Generate a cutting shape
+    cuttingShape = generateRectangleCuttingShape(seed=random.randint(0, 100000), position=facePosition, dimension=(faceWidth * 0.9, faceHeight * 0.9), recursionDepth=0)
+    
+    # Cut the plate with the tech-ish shape.
+    resultingFace = cutPlate(seed, objectToCut, faceToCut, cuttingShape)
     
     
-    ## Cut the surface again to have a clean surface to work with again.
+    ## Cut the surface again to have a clean surface to work with for recursivity.
     # Generate a plane cutting shape.
     bpy.ops.mesh.primitive_plane_add(size=0.5, view_align=False, enter_editmode=True, location=(facePosition))
     bpy.ops.transform.resize(value=(faceWidth, faceHeight, 1), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL')
@@ -153,9 +168,8 @@ def cutPlate(seed, objectToCut, faceToCut):
     dataToRemove = cuttingShape.data
     bpy.data.objects.remove(cuttingShape)
     bpy.data.meshes.remove(dataToRemove)
-
+    
     return resultingFace
-
 
 
 # Test function
@@ -164,4 +178,4 @@ if __name__ == "__main__":
     originalySelectedObject = bpy.context.active_object
 
     # Cut a plate in the selected object.
-    resultingFace = cutPlate(datetime.now(), originalySelectedObject, originalySelectedObject.data.polygons[0])
+    resultingFace = genericCutPlate(datetime.now(), originalySelectedObject, originalySelectedObject.data.polygons[0])
