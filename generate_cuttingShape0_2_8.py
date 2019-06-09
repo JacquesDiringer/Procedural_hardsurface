@@ -7,7 +7,6 @@ from datetime import datetime
 
 # Probabilities.
 randomSeed = 0 # Seed for randomization, different everytime when set to negative.
-rectangleProbability = 0.5 # Probability to pop a rectangle rather than a sphere.
 poppingNewEdge = 1.0 # Probability for each edge to enter a recursive cycle if the recursivity limit has not been hit.
 notchType45 = 0.5 # Probability to pop a 45 degrees notch.
 outerProbability = 0.5 # Probability to have a notch coming outward rather than inward.
@@ -22,6 +21,7 @@ outerRoundProbability = 0.5 # Probability of the curve to face outward.
 roundSegments = 5 # Number of vertices composing the curve.
 
 # Rectangles probabilities.
+rectangleProbability = 0.5 # Probability to pop a rectangle rather than a sphere.
 maximumRatioDifference = 0.2 # Maximum ratio between height and width, smaller values make for a bigger ratio. Should belong to [0 ; 1].
 verticalProbability = 0.5 # Probability of poping a vertical rectangle if maximumRatioDifference is different from 1.
 
@@ -183,6 +183,10 @@ def genericEdgeTransformation(seed, originalBmesh, edgeToTransform, recursionDep
 	
 	# Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
 	random.seed(seed)
+
+	# Variables to return.
+	currentDepth = None
+	outer = None
 	
 	# Decide if there is going to be a recursion pass for this edge.
 	if(random.uniform(0, 1) < poppingNewEdge):
@@ -232,6 +236,12 @@ def genericEdgeTransformation(seed, originalBmesh, edgeToTransform, recursionDep
 				genericEdgeTransformation(futureSeed, originalBmesh, currentEdge, recursionDepth - 1)
 		
 		originalBmesh.edges.ensure_lookup_table()
+
+		if outer:
+			return currentDepth
+		else:
+			return -currentDepth
+		
 		
 
 # Loops trough edges to add detail recursively.
@@ -262,7 +272,10 @@ def genericShapeTransformation(seed, recursionDepth):
 	bm.edges.ensure_lookup_table()
 
 #    print("Initial edges = " + str(len(bm.edges)))
-		
+	
+	# Keep track of the maximum depth (negative or positive) encountered on each edge.
+	edgesDepth = []
+	
 	for currentEdge in range(0, len(bm.edges)):
 		if symetry:
 			# When symetry is enabled, take the same seed for every edge.
@@ -271,7 +284,8 @@ def genericShapeTransformation(seed, recursionDepth):
 			# When symetry is disabled, randomize the seed for every edge.
 			futureSeed = random.randint(0, 1000000)
 			
-		genericEdgeTransformation(futureSeed, bm, bm.edges[currentEdge], recursionDepth)
+		currentEdgeDepth = genericEdgeTransformation(futureSeed, bm, bm.edges[currentEdge], recursionDepth)
+		edgesDepth.append(currentEdgeDepth)
 
 	# Some of the previous operations can cause some vertices to be at the same position, remove duplicates.
 	bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.000001)
@@ -288,7 +302,8 @@ def genericShapeTransformation(seed, recursionDepth):
 
 	# Exit edit mode.
 	bpy.ops.object.mode_set(mode = 'OBJECT')
-	
+
+	return edgesDepth
 	
 		
 # Generates a circle shape of 6 edges with recursive details.
@@ -309,14 +324,14 @@ def generateCircleCuttingShape(seed, position, dimension, edgeCount, recursionDe
 	bpy.ops.object.mode_set(mode = 'OBJECT')
 
 	# Generic function to add details on edges.
-	genericShapeTransformation(seed, recursionDepth)	
+	genericShapeTransformation(seed, recursionDepth)
 	
 	
 # Generates a rectangular shape with recursive details.
 def generateRectangleCuttingShape(seed, position, dimension, recursionDepth):
 
 	# Generate a plane.
-	bpy.ops.mesh.primitive_plane_add(size=0.8, view_align=False, enter_editmode=False, location=(position))
+	bpy.ops.mesh.primitive_plane_add(size=1.0, view_align=False, enter_editmode=False, location=(position))
 	
 	# Keep track of the created object.
 	createdShape = bpy.context.active_object
@@ -330,9 +345,9 @@ def generateRectangleCuttingShape(seed, position, dimension, recursionDepth):
 	bpy.ops.object.mode_set(mode = 'OBJECT')
 	
 	# Generic function to add details on edges.
-	genericShapeTransformation(seed, recursionDepth)
+	edgesDepth = genericShapeTransformation(seed, recursionDepth)
 
-	return createdShape
+	return createdShape, edgesDepth
 	
 	
 def generateGenericCuttingShape(seed, position):
