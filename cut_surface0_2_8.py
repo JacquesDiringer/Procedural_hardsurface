@@ -175,17 +175,8 @@ def genericCutPlate(seed, objectToCut, faceTuple):
     cuttingShapeDimension = (faceWidth * 0.5, faceHeight * 0.5)
     cuttingShape, edgesDepth = generateRectangleCuttingShape(seed=random.randint(0, 100000), position=facePosition, dimension=cuttingShapeDimension, recursionDepth=0)
     
-    print("edgesDepth before fix = " + str(edgesDepth))
+    print("edgesDepth = " + str(edgesDepth))
     
-    # Fix edges depth.
-    edgesDepth[0] = edgesDepth[0] * cuttingShapeDimension[0]
-    edgesDepth[1] = edgesDepth[1] * cuttingShapeDimension[1]
-    edgesDepth[2] = edgesDepth[2] * cuttingShapeDimension[0]
-    edgesDepth[3] = edgesDepth[3] * cuttingShapeDimension[1]
-    
-    # Compute the inner bounds of the cutting shape.
-    print("edgesDepth after fix = " + str(edgesDepth))
-
     cuttingShapeOuterBounds =  [-cuttingShapeDimension[0]/2 - max(0, edgesDepth[0]), # left
                                 -cuttingShapeDimension[1]/2 - max(0, edgesDepth[1]), # bottom
                                 cuttingShapeDimension[0]/2 + max(0, edgesDepth[2]), # right
@@ -221,6 +212,7 @@ def genericCutPlate(seed, objectToCut, faceTuple):
 
     
     # After this rescale, the inner bounds can be calculated
+    # Compute the inner bounds of the cutting shape.
     cuttingShapeInnerBounds =  [(-cuttingShapeDimension[0]/2 - min(0, edgesDepth[0])) * cuttingShapeScaleFactor + cuttingShapeTranslation[0], # left
                                 (-cuttingShapeDimension[1]/2 - min(0, edgesDepth[1])) * cuttingShapeScaleFactor + cuttingShapeTranslation[1] , # bottom
                                 ( cuttingShapeDimension[0]/2 + min(0, edgesDepth[2])) * cuttingShapeScaleFactor + cuttingShapeTranslation[0], # right
@@ -297,8 +289,9 @@ if __name__ == "__main__":
 
     # Cut a plate in the selected object.
     resultingFaceTuple = genericCutPlate(datetime.now(), originalySelectedObject, buildFaceTuple(originalySelectedObject, originalySelectedObject.data.polygons[0].index))
-    resultingFaceTuple = genericCutPlate(0, originalySelectedObject, resultingFaceTuple)
-#    resultingFaceTuple = genericCutPlate(0, originalySelectedObject, resultingFaceTuple)
+    resultingFaceTuple = genericCutPlate(datetime.now(), originalySelectedObject, resultingFaceTuple)
+    resultingFaceTuple = genericCutPlate(datetime.now(), originalySelectedObject, resultingFaceTuple)
+    resultingFaceTuple = genericCutPlate(datetime.now(), originalySelectedObject, resultingFaceTuple)
 #    resultingFaceTuple = genericCutPlate(0, originalySelectedObject, resultingFaceTuple)
 #    resultingFaceTuple = genericCutPlate(0, originalySelectedObject, resultingFaceTuple)
     bpy.ops.object.mode_set(mode = 'EDIT')
