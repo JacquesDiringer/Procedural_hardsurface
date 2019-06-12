@@ -5,6 +5,24 @@ import mathutils
 import random
 from datetime import datetime
 
+
+# Import submodules.
+import sys
+import os
+import importlib
+import copy
+
+blend_dir = os.path.dirname(bpy.data.filepath)
+if blend_dir not in sys.path:
+   sys.path.append(blend_dir)
+
+# Utils.
+import utils_2_8
+importlib.reload(utils_2_8)
+from utils_2_8 import *
+
+
+
 # Probabilities.
 randomSeed = 0 # Seed for randomization, different everytime when set to negative.
 poppingNewEdge = 1.0 # Probability for each edge to enter a recursive cycle if the recursivity limit has not been hit.
@@ -184,6 +202,9 @@ def genericEdgeTransformation(seed, originalBmesh, edgeToTransform, recursionDep
 	# Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
 	random.seed(seed)
 
+	# Useful for the final depth computation.
+	edgeToTransformLength = edgeLength(edgeToTransform)
+
 	# Variables to return.
 	currentDepth = None
 	outer = None
@@ -237,6 +258,9 @@ def genericEdgeTransformation(seed, originalBmesh, edgeToTransform, recursionDep
 		
 		originalBmesh.edges.ensure_lookup_table()
 
+		# The actual depth length is the proportional depth * the edge length.
+		currentDepth = currentDepth * edgeToTransformLength
+		
 		if outer:
 			return currentDepth
 		else:

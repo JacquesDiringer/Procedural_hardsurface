@@ -286,14 +286,18 @@ if __name__ == "__main__":
     bpy.ops.object.delete(use_global=False, confirm=False)
 
     # Create a new plane.
-    bpy.ops.mesh.primitive_plane_add(view_align=False, enter_editmode=False, location=(0, 0, 0))
+    bpy.ops.mesh.primitive_plane_add(view_align=False, enter_editmode=True, location=(0, 0, 0))
+#    bpy.ops.transform.resize(value=(1, 2.0, 1), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, False), mirror=True, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1)
+    
+    bpy.ops.object.mode_set(mode = 'OBJECT')
+
     
     # Keep track of the selected object.
     originalySelectedObject = bpy.context.active_object
 
     # Cut a plate in the selected object.
-    resultingFaceTuple = genericCutPlate(0, originalySelectedObject, buildFaceTuple(originalySelectedObject, originalySelectedObject.data.polygons[0].index))
-#    resultingFaceTuple = genericCutPlate(0, originalySelectedObject, resultingFaceTuple)
+    resultingFaceTuple = genericCutPlate(datetime.now(), originalySelectedObject, buildFaceTuple(originalySelectedObject, originalySelectedObject.data.polygons[0].index))
+    resultingFaceTuple = genericCutPlate(0, originalySelectedObject, resultingFaceTuple)
 #    resultingFaceTuple = genericCutPlate(0, originalySelectedObject, resultingFaceTuple)
 #    resultingFaceTuple = genericCutPlate(0, originalySelectedObject, resultingFaceTuple)
 #    resultingFaceTuple = genericCutPlate(0, originalySelectedObject, resultingFaceTuple)

@@ -75,6 +75,10 @@ def setRegion3D(override, originalConfiguration):
 
 def distance(aVert, bVert):
     return sqrt((aVert.x - bVert.x)**2 + (aVert.y - bVert.y)**2 + (aVert.z - bVert.z)**2)
+
+# Compute the length of an edge.
+def edgeLength(edge):
+    return distance(edge.verts[0].co, edge.verts[1].co)
     
     
 ### Handling meshes. ###
@@ -140,4 +144,3 @@ def findFaceByVertices(objectToBrowse, verticesArray):
             foundFace = currentPolygon.index
     
     return foundFace
-
