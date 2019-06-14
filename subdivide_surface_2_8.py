@@ -125,6 +125,9 @@ def subdivideGeneric(seed, objectToSubdivide, faceTuple):
     objectToSubdivide.data.validate(verbose=True)
     objectToSubdivide.update_from_editmode()
     
+    # We always want to exit functions in object mode.
+    bpy.ops.object.mode_set(mode = 'OBJECT')
+    
     # Return an array of face tuples for the selected faces.
     # The selected faces are the ones resulting of the subdivision.
     faceTuplesResult = [buildFaceTuple(objectToSubdivide, currentPolygon.index) for currentPolygon in objectToSubdivide.data.polygons if currentPolygon.select]

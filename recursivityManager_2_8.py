@@ -40,42 +40,92 @@ insetProbability = 0.1
 subdivide_surface_2_8.minimumLength = 0.05
 
 
-def subdivideFaces(objectToBrowse, facesTuples):
+def subdivideFaces(seed, objectToBrowse, facesTuples):
     totalFacesTuples = []
     for currentFaceTuple in facesTuples:
         if random.uniform(0, 1) < subdivisionProbability:
-            generatedFacesTuples = subdivideGeneric(datetime.now(), objectToBrowse, currentFaceTuple)
+            generatedFacesTuples = subdivideGeneric(seed, objectToBrowse, currentFaceTuple)
             if(generatedFacesTuples is not None):
                 totalFacesTuples.extend(generatedFacesTuples)
+                
+    # Sort the arrays from in descending order according to the index, to avoid index offsetting side effects when modifying a face.
+    totalFacesTuples = sorted(totalFacesTuples, key= lambda faceTuple: faceTuple[0], reverse = True)
+    print("totalFacesTuples (after subdivision) = " + str([currentTuple[0] for currentTuple in totalFacesTuples]))
+    
     
     resultFacesTuples = []
     for currentFaceTuple in totalFacesTuples:
         if random.uniform(0, 1) < insetProbability:
-            generatedFacesTuples = insetGeneric(datetime.now(), objectToBrowse, currentFaceTuple)
+            generatedFacesTuples = insetGeneric(seed, objectToBrowse, currentFaceTuple)
             resultFacesTuples.extend(generatedFacesTuples)
         else:
             resultFacesTuples.append(currentFaceTuple)
+    
+    # Sort the arrays from in descending order according to the index, to avoid index offsetting side effects when modifying a face.
+    resultFacesTuples = sorted(resultFacesTuples, key= lambda faceTuple: faceTuple[0], reverse = True)
+    print("resultFacesTuples (after inset) = " + str([currentTuple[0] for currentTuple in resultFacesTuples]))
         
     return resultFacesTuples
 
 
+def subdivideAndCut(seed, objectToBrowse, facesTuples):
+    
+    print("facesTuples = " + str([currentTuple[0] for currentTuple in facesTuples]))
+    
+    subdividedFacesTuples = subdivideFaces(seed, objectToBrowse, facesTuples)
+#    subdividedFacesTuples = facesTuples
+
+    bpy.ops.object.mode_set(mode = 'OBJECT')
+
+    print("subdividedFacesTuples = " + str([currentTuple[0] for currentTuple in subdividedFacesTuples]))
+    
+    finalFacesTuples = []
+    for currentFaceTuple in subdividedFacesTuples:
+        resultingFaceTuple = genericCutPlate(seed, objectToBrowse, currentFaceTuple)
+        
+        if resultingFaceTuple == None:
+            finalFacesTuples.append(currentFaceTuple)
+        else:
+            finalFacesTuples.append(resultingFaceTuple)
+    
+    # Sort the arrays from in descending order according to the index, to avoid index offsetting side effects when modifying a face.
+    finalFacesTuples = sorted(finalFacesTuples, key= lambda faceTuple: faceTuple[0], reverse = True)
+    print("finalFacesTuples = " + str([currentTuple[0] for currentTuple in finalFacesTuples]))
+    
+    return finalFacesTuples
+
+
 
 def recursiveGeneration(objectToModify, faceToModify):
+    
+    # Modify cutting settings.
+    cut_surface0_2_8.cuttingShapeMargin = 0.9
+    cut_surface0_2_8.cleanFaceMargin = 0.7
+    
     # Cut a plate in the selected object.
-    #resultingFace = cutPlate(datetime.now(), originalySelectedObject, originalySelectedObject.data.polygons[0])
-    #resultingFace = cutPlate(datetime.now(), originalySelectedObject, resultingFace)
-    #resultingFace = cutPlate(datetime.now(), originalySelectedObject, resultingFace)
-    #resultingFace = cutPlate(datetime.now(), originalySelectedObject, resultingFace)
+#    resultingFaceTuple = genericCutPlate(datetime.now(), objectToModify, buildFaceTuple(objectToModify, objectToModify.data.polygons[0].index))
+#    resultingFaceTuple = genericCutPlate(datetime.now(), objectToModify, resultingFaceTuple)
+#    resultingFaceTuple = genericCutPlate(datetime.now(), objectToModify, resultingFaceTuple)
+#    resultingFaceTuple = genericCutPlate(datetime.now(), objectToModify, resultingFaceTuple)
     
     
 #    datetime.now()
     
-    resultingFacesTuples = subdivideFaces(objectToModify, [buildFaceTuple(objectToModify, faceToModify.index)])
+#    resultingFacesTuples = subdivideFaces(objectToModify, [buildFaceTuple(objectToModify, faceToModify.index)])
     
-    resultingFacesTuples = subdivideFaces(objectToModify, resultingFacesTuples)
-    resultingFacesTuples = subdivideFaces(objectToModify, resultingFacesTuples)
-    resultingFacesTuples = subdivideFaces(objectToModify, resultingFacesTuples)
-    resultingFacesTuples = subdivideFaces(objectToModify, resultingFacesTuples)
+#    resultingFacesTuples = subdivideFaces(objectToModify, resultingFacesTuples)
+#    resultingFacesTuples = subdivideFaces(objectToModify, resultingFacesTuples)
+#    resultingFacesTuples = subdivideFaces(objectToModify, resultingFacesTuples)
+#    resultingFacesTuples = subdivideFaces(objectToModify, resultingFacesTuples)
+
+
+    # Subdivide and cut.
+    seedToUse = datetime.now()
+    print("seedToUse = " + str(seedToUse))
+    resultingFaceTuple = subdivideAndCut(seedToUse, objectToModify, [buildFaceTuple(objectToModify, objectToModify.data.polygons[0].index)])
+    resultingFaceTuple = subdivideAndCut(datetime.now(), objectToModify, resultingFaceTuple)
+    #resultingFaceTuple = subdivideAndCut(datetime.now(), objectToModify, resultingFaceTuple)
+    #resultingFaceTuple = subdivideAndCut(datetime.now(), objectToModify, resultingFaceTuple)
 
 
    
@@ -143,5 +193,5 @@ def applyToSelectedFaces():
 # Test function
 if __name__ == "__main__":
     
-#    generateBatch(4)
-    applyToSelectedFaces()
+    generateBatch(4)
+#    applyToSelectedFaces()

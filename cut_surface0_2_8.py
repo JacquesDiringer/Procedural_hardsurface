@@ -167,15 +167,10 @@ def genericCutPlate(seed, objectToCut, faceTuple):
     faceWidth   = rectDimension[1] - rectDimension[0]
     faceHeight  = rectDimension[3] - rectDimension[2]
     facePosition = ((rectDimension[1] + rectDimension[0]) * 0.5, (rectDimension[3] + rectDimension[2]) * 0.5, 0)
-    
-    print("faceWidth = " + str(faceWidth))
-    print("faceHeight = " + str(faceHeight))
 
     # Generate a cutting shape
     cuttingShapeDimension = (faceWidth * 0.5, faceHeight * 0.5)
     cuttingShape, edgesDepth = generateRectangleCuttingShape(seed=random.randint(0, 100000), position=facePosition, dimension=cuttingShapeDimension, recursionDepth=0)
-    
-    print("edgesDepth = " + str(edgesDepth))
     
     cuttingShapeOuterBounds =  [-cuttingShapeDimension[0]/2 - max(0, edgesDepth[0]), # left
                                 -cuttingShapeDimension[1]/2 - max(0, edgesDepth[1]), # bottom
@@ -187,17 +182,11 @@ def genericCutPlate(seed, objectToCut, faceTuple):
                                         
     cuttingShapeOuterBoundsOffset = ((  cuttingShapeOuterBounds[2] + cuttingShapeOuterBounds[0]) * 0.5, # width
                                     (   cuttingShapeOuterBounds[3] + cuttingShapeOuterBounds[1]) * 0.5) # height
-                                        
-    print("cuttingShapeOuterBounds = " + str(cuttingShapeOuterBounds))
-    print("cuttingShapeOuterBoundsDimension = " + str(cuttingShapeOuterBoundsDimension))
-    print("cuttingShapeOuterBoundsOffset = " + str(cuttingShapeOuterBoundsOffset))
     
     
     # Translation.
     cuttingShapeTranslation = (-cuttingShapeOuterBoundsOffset[0], -cuttingShapeOuterBoundsOffset[1], 0)
     bpy.ops.transform.translate(value=cuttingShapeTranslation, orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL')
-    
-    print("cuttingShapeTranslation = " + str(cuttingShapeTranslation))
     
     
     # The cutting shape should be re-scaled and translated to fit the face to cut.
@@ -206,9 +195,7 @@ def genericCutPlate(seed, objectToCut, faceTuple):
     # Correct center for the resize.
     bpy.context.scene.tool_settings.transform_pivot_point = 'MEDIAN_POINT'
     # Resize operation.
-    bpy.ops.transform.resize(value=(cuttingShapeScaleFactor, cuttingShapeScaleFactor, 1), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL')                                   
-    
-    print("cuttingShapeScaleFactor = " + str(cuttingShapeScaleFactor))
+    bpy.ops.transform.resize(value=(cuttingShapeScaleFactor, cuttingShapeScaleFactor, 1), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL')
 
     
     # After this rescale, the inner bounds can be calculated
@@ -223,12 +210,6 @@ def genericCutPlate(seed, objectToCut, faceTuple):
                                         
     cuttingShapeInnerBoundsOffset = (   (cuttingShapeInnerBounds[2] + cuttingShapeInnerBounds[0]) * 0.5, # width
                                         (cuttingShapeInnerBounds[3] + cuttingShapeInnerBounds[1]) * 0.5) # height
-                                        
-                                        
-    
-    print("cuttingShapeInnerBounds = " + str(cuttingShapeInnerBounds))
-    print("cuttingShapeInnerBoundsDimension = " + str(cuttingShapeInnerBoundsDimension))
-    print("cuttingShapeInnerBoundsOffset = " + str(cuttingShapeInnerBoundsOffset))
     
     
     # Cut the plate with the tech-ish shape.
@@ -246,9 +227,6 @@ def genericCutPlate(seed, objectToCut, faceTuple):
     cleanFaceTranslation = (cuttingShapeInnerBoundsOffset[0], cuttingShapeInnerBoundsOffset[1], 0)
 #    cleanFaceTranslation = (0.06072782036990082, 0.009383141258685945, 0)
     bpy.ops.transform.translate(value=cleanFaceTranslation, orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL')
-    
-    print("cleanFaceScale = " + str(cleanFaceScale))
-    print("cleanFaceTranslation = " + str(cleanFaceTranslation))
 
     # Go back to object mode.
     bpy.ops.object.mode_set(mode = 'OBJECT')
