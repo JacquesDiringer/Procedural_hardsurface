@@ -39,6 +39,8 @@ insetProbability = 0.1
 # Parameters for other modules.
 subdivide_surface_2_8.minimumLength = 0.05
 
+# Recursive probabilities.
+subdivisionOverCutProbability = 0.5
 
 # Batches generation.
 seedOffsetForBatches = 0
@@ -73,29 +75,45 @@ def subdivideFaces(seed, objectToBrowse, facesTuples):
     return resultFacesTuples
 
 
-def subdivideAndCut(seed, objectToBrowse, facesTuples):
+def subdivideOrCut(seed, objectToBrowse, facesTuples):
+    
+    # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
+    random.seed(seed)
     
     print("facesTuples = " + str([currentTuple[0] for currentTuple in facesTuples]))
     
-    subdividedFacesTuples = subdivideFaces(seed, objectToBrowse, facesTuples)
-#    subdividedFacesTuples = facesTuples
-
-    bpy.ops.object.mode_set(mode = 'OBJECT')
-
-    print("subdividedFacesTuples = " + str([currentTuple[0] for currentTuple in subdividedFacesTuples]))
-    
+    # Final result to return.
     finalFacesTuples = []
-    for currentFaceTuple in subdividedFacesTuples:
-        resultingFaceTuple = genericCutPlate(seed, objectToBrowse, currentFaceTuple)
+    
+    for currentFaceTuple in facesTuples:
+        resultingFacesTuples = []
         
-        if resultingFaceTuple == None:
+        # Randomly pick a subdivision or cut operation.
+        subdivisionOverCut = random.uniform(0, 1) < subdivisionOverCutProbability
+        
+        if subdivisionOverCut:
+            resultingFacesTuples = subdivideFaces(seed, objectToBrowse, [currentFaceTuple])
+        else:
+            resultingFacesTuples = [genericCutPlate(seed, objectToBrowse, currentFaceTuple)]
+        # This might be necessary to refresh the object, check this.
+        bpy.ops.object.mode_set(mode = 'OBJECT')
+            
+        # Add the resulting faces to the final total array.
+        if resultingFacesTuples == None:
             finalFacesTuples.append(currentFaceTuple)
         else:
-            finalFacesTuples.append(resultingFaceTuple)
+            finalFacesTuples.extend(resultingFacesTuples)
+    
+    print("finalFacesTuples before filter  = " + str(finalFacesTuples))
+    # Filter out empty elements.
+    finalFacesTuples = [currentTuple for currentTuple in finalFacesTuples if not currentTuple == []]
+    
+    print("finalFacesTuples before sort = " + str(finalFacesTuples))
+    print("finalFacesTuples before sort = " + str([currentTuple[0] for currentTuple in finalFacesTuples]))
     
     # Sort the arrays from in descending order according to the index, to avoid index offsetting side effects when modifying a face.
     finalFacesTuples = sorted(finalFacesTuples, key= lambda faceTuple: faceTuple[0], reverse = True)
-    print("finalFacesTuples = " + str([currentTuple[0] for currentTuple in finalFacesTuples]))
+    print("finalFacesTuples after sort = " + str([currentTuple[0] for currentTuple in finalFacesTuples]))
     
     return finalFacesTuples
 
@@ -106,30 +124,11 @@ def recursiveGeneration(seed, objectToModify, facesToModify, recursiveDepth):
     # Modify cutting settings.
     cut_surface0_2_8.cuttingShapeMargin = 0.9
     cut_surface0_2_8.cleanFaceMargin = 0.7
-    
-    # Cut a plate in the selected object.
-#    resultingFaceTuple = genericCutPlate(datetime.now(), objectToModify, buildFaceTuple(objectToModify, objectToModify.data.polygons[0].index))
-#    resultingFaceTuple = genericCutPlate(datetime.now(), objectToModify, resultingFaceTuple)
-#    resultingFaceTuple = genericCutPlate(datetime.now(), objectToModify, resultingFaceTuple)
-#    resultingFaceTuple = genericCutPlate(datetime.now(), objectToModify, resultingFaceTuple)
-    
-    
-#    datetime.now()
-    
-#    resultingFacesTuples = subdivideFaces(objectToModify, [buildFaceTuple(objectToModify, faceToModify.index)])
-    
-#    resultingFacesTuples = subdivideFaces(objectToModify, resultingFacesTuples)
-#    resultingFacesTuples = subdivideFaces(objectToModify, resultingFacesTuples)
-#    resultingFacesTuples = subdivideFaces(objectToModify, resultingFacesTuples)
-#    resultingFacesTuples = subdivideFaces(objectToModify, resultingFacesTuples)
 
-
-    # Subdivide and cut.
-#    seedToUse = datetime.now()
-#    print("seedToUse = " + str(seedToUse))
-    
+    # Subdivide or cut recursively.
+    # Traverse the created faces in a descending order according to their index, to avoid issues with index offsetting when creating new faces.
     for currentFaceToModify in facesToModify:
-        resultingFaceTuples = subdivideAndCut(seed, objectToModify, [currentFaceToModify])
+        resultingFaceTuples = subdivideOrCut(seed, objectToModify, [currentFaceToModify])
     
         # Faces should have been returned in a descending order for the index.
         if recursiveDepth > 0:
@@ -155,7 +154,7 @@ def generateBatch(squareSize):
             firstPolygon = originalySelectedObject.data.polygons[0]
             
             # Recursive generation.
-            recursiveGeneration(seedOffsetForBatches + facesCount, originalySelectedObject, [firstPolygonTuple], 2)
+            recursiveGeneration(seedOffsetForBatches + facesCount, originalySelectedObject, [firstPolygonTuple], 1)
             facesCount = facesCount + 1
             
             bpy.ops.object.mode_set(mode = 'OBJECT')
