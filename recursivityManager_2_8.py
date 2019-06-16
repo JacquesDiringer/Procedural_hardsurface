@@ -40,6 +40,11 @@ insetProbability = 0.1
 subdivide_surface_2_8.minimumLength = 0.05
 
 
+# Batches generation.
+seedOffsetForBatches = 0
+
+
+
 def subdivideFaces(seed, objectToBrowse, facesTuples):
     totalFacesTuples = []
     for currentFaceTuple in facesTuples:
@@ -96,7 +101,7 @@ def subdivideAndCut(seed, objectToBrowse, facesTuples):
 
 
 
-def recursiveGeneration(objectToModify, faceToModify):
+def recursiveGeneration(seed, objectToModify, facesToModify, recursiveDepth):
     
     # Modify cutting settings.
     cut_surface0_2_8.cuttingShapeMargin = 0.9
@@ -120,18 +125,22 @@ def recursiveGeneration(objectToModify, faceToModify):
 
 
     # Subdivide and cut.
-    seedToUse = datetime.now()
-    print("seedToUse = " + str(seedToUse))
-    resultingFaceTuple = subdivideAndCut(seedToUse, objectToModify, [buildFaceTuple(objectToModify, objectToModify.data.polygons[0].index)])
-    resultingFaceTuple = subdivideAndCut(datetime.now(), objectToModify, resultingFaceTuple)
-    #resultingFaceTuple = subdivideAndCut(datetime.now(), objectToModify, resultingFaceTuple)
-    #resultingFaceTuple = subdivideAndCut(datetime.now(), objectToModify, resultingFaceTuple)
+#    seedToUse = datetime.now()
+#    print("seedToUse = " + str(seedToUse))
+    
+    for currentFaceToModify in facesToModify:
+        resultingFaceTuples = subdivideAndCut(seed, objectToModify, [currentFaceToModify])
+    
+        # Faces should have been returned in a descending order for the index.
+        if recursiveDepth > 0:
+            recursiveGeneration(seed, objectToModify, resultingFaceTuples, recursiveDepth - 1)
 
 
    
  
 def generateBatch(squareSize):
     
+    facesCount = 0
     for xCoords in range(0, squareSize):
         for yCoords in range(0, squareSize):
             
@@ -142,10 +151,12 @@ def generateBatch(squareSize):
             originalySelectedObject = bpy.context.active_object
             
             # Find the first and only polygon in it.
+            firstPolygonTuple = buildFaceTuple(originalySelectedObject, originalySelectedObject.data.polygons[0].index)
             firstPolygon = originalySelectedObject.data.polygons[0]
             
             # Recursive generation.
-            recursiveGeneration(originalySelectedObject, firstPolygon)
+            recursiveGeneration(seedOffsetForBatches + facesCount, originalySelectedObject, [firstPolygonTuple], 2)
+            facesCount = facesCount + 1
             
             bpy.ops.object.mode_set(mode = 'OBJECT')
     
@@ -184,7 +195,7 @@ def applyToSelectedFaces():
         print(str(counter) + " of " + str(totalFaces) + " faces.")
         
         # Recursive generation.
-        recursiveGeneration(objectToModify, objectToModify.data.polygons[currentFaceIndex])
+        recursiveGeneration(objectToModify, [objectToModify.data.polygons[currentFaceIndex]])
     
     # Go back in edit mode.
     bpy.ops.object.mode_set(mode = 'EDIT')
@@ -193,5 +204,5 @@ def applyToSelectedFaces():
 # Test function
 if __name__ == "__main__":
     
-    generateBatch(4)
+    generateBatch(2)
 #    applyToSelectedFaces()
