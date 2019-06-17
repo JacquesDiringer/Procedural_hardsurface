@@ -29,6 +29,7 @@ from utils_2_8 import *
 
 cuttingShapeMargin = 0.9
 cleanFaceMargin = 0.9
+bevelOffset = 0.01
 
 
 def knifeProject(surfaceToCut, surfaceCuter):
@@ -74,7 +75,6 @@ def addCutCrease(surfaceToCrease):
     # Set the edges of the crease as sharp.
     bpy.ops.mesh.mark_sharp()
     
-    bevelOffset = 0.01
     # Create a bevel, the cutting shape of only one segment becomes 3 segments after this.
     bpy.ops.mesh.bevel(offset_type='OFFSET', offset=bevelOffset, offset_pct=0, segments=2, profile=0.5, vertex_only=False, clamp_overlap=True, loop_slide=True, mark_seam=False, mark_sharp=True)
     

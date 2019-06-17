@@ -33,21 +33,31 @@ from inset_surface_2_8 import *
 
     
 subdivisionProbability = 0.8
-insetProbability = 0.1
+insetProbability = 0.5
 
 
 # Parameters for other modules.
 subdivide_surface_2_8.minimumLength = 0.05
+# Modify cutting settings.
+cut_surface0_2_8.bevelOffset = 0.001
+cut_surface0_2_8.cuttingShapeMargin = 0.9
+cut_surface0_2_8.cleanFaceMargin = 0.7
 
-# Recursive probabilities.
-subdivisionOverCutProbability = 0.5
+# Recursive settings.
+recursiveDepth = 5
+subdivisionOverCutProbability = 0.7
 
 # Batches generation.
+batchSize = 3
 seedOffsetForBatches = 0
 
 
 
 def subdivideFaces(seed, objectToBrowse, facesTuples):
+    
+    # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
+    random.seed(seed)
+    
     totalFacesTuples = []
     for currentFaceTuple in facesTuples:
         if random.uniform(0, 1) < subdivisionProbability:
@@ -92,9 +102,9 @@ def subdivideOrCut(seed, objectToBrowse, facesTuples):
         subdivisionOverCut = random.uniform(0, 1) < subdivisionOverCutProbability
         
         if subdivisionOverCut:
-            resultingFacesTuples = subdivideFaces(seed, objectToBrowse, [currentFaceTuple])
+            resultingFacesTuples = subdivideFaces(random.randint(0, 100000), objectToBrowse, [currentFaceTuple])
         else:
-            resultingFacesTuples = [genericCutPlate(seed, objectToBrowse, currentFaceTuple)]
+            resultingFacesTuples = [genericCutPlate(random.randint(0, 100000), objectToBrowse, currentFaceTuple)]
         # This might be necessary to refresh the object, check this.
         bpy.ops.object.mode_set(mode = 'OBJECT')
             
@@ -104,9 +114,8 @@ def subdivideOrCut(seed, objectToBrowse, facesTuples):
         else:
             finalFacesTuples.extend(resultingFacesTuples)
     
-    print("finalFacesTuples before filter  = " + str(finalFacesTuples))
     # Filter out empty elements.
-    finalFacesTuples = [currentTuple for currentTuple in finalFacesTuples if not currentTuple == []]
+    finalFacesTuples = [currentTuple for currentTuple in finalFacesTuples if not (currentTuple == [] or currentTuple == None) ]
     
     print("finalFacesTuples before sort = " + str(finalFacesTuples))
     print("finalFacesTuples before sort = " + str([currentTuple[0] for currentTuple in finalFacesTuples]))
@@ -121,18 +130,17 @@ def subdivideOrCut(seed, objectToBrowse, facesTuples):
 
 def recursiveGeneration(seed, objectToModify, facesToModify, recursiveDepth):
     
-    # Modify cutting settings.
-    cut_surface0_2_8.cuttingShapeMargin = 0.9
-    cut_surface0_2_8.cleanFaceMargin = 0.7
+    # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
+    random.seed(seed)
 
     # Subdivide or cut recursively.
     # Traverse the created faces in a descending order according to their index, to avoid issues with index offsetting when creating new faces.
     for currentFaceToModify in facesToModify:
-        resultingFaceTuples = subdivideOrCut(seed, objectToModify, [currentFaceToModify])
+        resultingFaceTuples = subdivideOrCut(random.randint(0, 100000), objectToModify, [currentFaceToModify])
     
         # Faces should have been returned in a descending order for the index.
         if recursiveDepth > 0:
-            recursiveGeneration(seed, objectToModify, resultingFaceTuples, recursiveDepth - 1)
+            recursiveGeneration(random.randint(0, 100000), objectToModify, resultingFaceTuples, recursiveDepth - 1)
 
 
    
@@ -154,7 +162,7 @@ def generateBatch(squareSize):
             firstPolygon = originalySelectedObject.data.polygons[0]
             
             # Recursive generation.
-            recursiveGeneration(seedOffsetForBatches + facesCount, originalySelectedObject, [firstPolygonTuple], 1)
+            recursiveGeneration(seedOffsetForBatches + facesCount, originalySelectedObject, [firstPolygonTuple], recursiveDepth)
             facesCount = facesCount + 1
             
             bpy.ops.object.mode_set(mode = 'OBJECT')
@@ -203,5 +211,5 @@ def applyToSelectedFaces():
 # Test function
 if __name__ == "__main__":
     
-    generateBatch(2)
+    generateBatch(batchSize)
 #    applyToSelectedFaces()
