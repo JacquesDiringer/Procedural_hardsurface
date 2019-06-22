@@ -355,7 +355,7 @@ def generateCircleCuttingShape(seed, position, dimension, edgeCount, recursionDe
 def generateRectangleCuttingShape(seed, position, dimension, recursionDepth):
 
 	# Generate a plane.
-	bpy.ops.mesh.primitive_plane_add(size=1.0, view_align=False, enter_editmode=False, location=(position))
+	bpy.ops.mesh.primitive_plane_add(size=1.0, align='WORLD', enter_editmode=False, location=(position))
 	
 	# Keep track of the created object.
 	createdShape = bpy.context.active_object

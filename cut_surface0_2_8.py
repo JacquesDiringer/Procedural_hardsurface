@@ -86,7 +86,7 @@ def addCutCrease(surfaceToCrease):
     bpy.ops.mesh.mark_sharp()
     
     # Lower the middle segment to create the crease.
-    bpy.ops.transform.translate(value=(0, 0, -bevelOffset * 2), orient_type='LOCAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, True), mirror=True, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1)
+    bpy.ops.transform.translate(value=(0, 0, -bevelOffset * 2), orient_type='LOCAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, True), mirror=True)
     
     # Go back to object mode.
     bpy.ops.object.mode_set(mode = 'OBJECT')
@@ -219,7 +219,7 @@ def genericCutPlate(seed, objectToCut, faceTuple):
     
     ## Cut the surface again to have a clean surface to work with for recursivity.
     # Generate a plane cutting shape.
-    bpy.ops.mesh.primitive_plane_add(size=1, view_align=False, enter_editmode=True, location=(facePosition))
+    bpy.ops.mesh.primitive_plane_add(size=1, align='WORLD', enter_editmode=True, location=(facePosition))
     # Re-scale to fit the plane in the inner bounds.
     cleanFaceScale = (cuttingShapeInnerBoundsDimension[0] * cleanFaceMargin, cuttingShapeInnerBoundsDimension[1] * cleanFaceMargin, 1)
     bpy.ops.transform.resize(value=cleanFaceScale, orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL')
