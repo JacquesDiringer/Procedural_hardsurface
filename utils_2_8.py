@@ -61,6 +61,57 @@ def createOverrideContext():
     
     return override, originalRegion3D
 
+def createFaceOverrideContext(position, direction):
+    region, rv3d, v3d, area = view3d_find(True)
+
+    # Define context override dictionary for overriding the knife_project operator's context
+    override = {
+        'scene'            : bpy.context.scene,
+        'region'           : region,
+        'area'             : area,
+        'space'            : v3d,
+        'active_object'    : bpy.context.object,
+        'window'           : bpy.context.window,
+        'screen'           : bpy.context.screen,
+        'selected_objects' : bpy.context.selected_objects,
+        'edit_object'      : bpy.context.object,
+        'region_3d'        : rv3d
+    }
+    
+    print("after creating override")
+    
+    originalRegion3D = {
+        'view_location'     : copy.copy(rv3d.view_location),
+        'view_distance'     : rv3d.view_distance,
+        'view_rotation'     : copy.copy(rv3d.view_rotation),
+        'view_perspective'  : rv3d.view_perspective}
+        
+    print("after creating originalRegion3D")
+    
+    # Set the view to origin with a small distance so that we have a better precision for the knife projection.
+    rv3d.view_location = position
+    rv3d.view_distance = 1
+    
+    print("after setting position")
+    
+    print(direction == None)
+    print(direction)
+    print("direction = " + str(direction))
+    # Set view to TOP by directly rotating the 3D view region's view_rotation.
+    rotationQuat = direction.to_track_quat('Z', 'Y')
+    print("rotationQuat = " + str(rotationQuat))
+    print("euler rotation = " + str(rotationQuat.to_euler()))
+    rv3d.view_rotation = rotationQuat
+    print("after setting rotation")
+    
+    
+    # Set the canera to orthographic.
+    rv3d.view_perspective = 'ORTHO'
+    
+    print("after setting perspective")
+    
+    return override, originalRegion3D
+
 def setRegion3D(override, originalConfiguration):
     rv3d = override['region_3d']
     
@@ -77,12 +128,12 @@ def distance(aVert, bVert):
     return sqrt((aVert.x - bVert.x)**2 + (aVert.y - bVert.y)**2 + (aVert.z - bVert.z)**2)
 
 # Compute the length of an edge.
-def edgeLength(edge):
-    return distance(edge.verts[0].co, edge.verts[1].co)
-    
-    
-### Handling meshes. ###
+# The edge here is a bmesh edge, regular edges don't carry the whole vertices.
+def edgeLength(bmeshEdge):
+    return distance(bmeshEdge.verts[0].co, bmeshEdge.verts[1].co)
 
+
+### Handling meshes. ###
 
 def findEdge(mesh, edgeKey):
     for currentEdge in mesh.edges:
@@ -91,10 +142,24 @@ def findEdge(mesh, edgeKey):
             return currentEdge
         
 def findEdgeIndex(mesh, edgeKey):
-    for currentEdge in mesh.edges:
-        currentEdgeKey = currentEdge.key
-        if (currentEdgeKey[0] == edgeKey[0] and currentEdgeKey[1] == edgeKey[1]):
-            return currentEdge.index
+    foundEdge = findEdge(mesh, edgeKey)
+    if not foundEdge==None:
+        return foundEdge.index
+    
+# Return the tangent of a face.
+# The face has to be a flat quad.
+def faceTangent(object, faceIndex):
+    face = object.data.polygons[faceIndex]
+    
+    # Take the first edge as the tangent.
+    edgeKeys = face.edge_keys[0]
+    
+    vertA = object.data.vertices[edgeKeys[0]]
+    vertB = object.data.vertices[edgeKeys[1]]
+    
+    tangent = vertA.co - vertB.co
+    
+    return tangent
         
 
 def buildFaceTuple(objectToBrowse, faceIndex):

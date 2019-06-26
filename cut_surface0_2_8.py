@@ -32,27 +32,74 @@ cleanFaceMargin = 0.9
 bevelOffset = 0.01
 
 
-def knifeProject(surfaceToCut, surfaceCuter):
+def knifeProject(surfaceToCut, surfaceCuter, position, direction, tangent):
     
     bpy.ops.object.mode_set(mode = 'OBJECT')
+    
+    # Check arguments.
+    if surfaceToCut == None or surfaceCuter == None:
+        print("knife project tentative with wrong arguments:")
+        print("surfaceToCut = " + str(surfaceToCut))
+        print("surfaceCuter = " + str(surfaceCuter))
+        return
+    
+    # Compute the yaw pitch rotation for surfaceCuter.
+    yawPitchQuat = direction.to_track_quat('Z', 'Y')
+    yawPitchEuler = yawPitchQuat.to_euler()
+    print("yawPitchEuler = " + str(yawPitchEuler))
+    
+    # Compute the roll rotation for surfaceCuter.
+    # First rotate the tangent flat.
+    rotatedTangent = yawPitchQuat.inverted() @ tangent;
+    
+    
+    rollEuler = rotatedTangent.to_track_quat('Y', 'Z').to_euler()
+    print("rollEuler = " + str(rollEuler))
+    
+    
+    # Select only the surfaceCuter.
+    bpy.ops.object.select_all(action='DESELECT')
+    surfaceCuter.select_set(True)
+    # And rotate it.
+    
+    bpy.ops.transform.rotate(value=rollEuler.z, orient_axis='Z')
+    
+    bpy.ops.transform.rotate(value=-yawPitchEuler.x, orient_axis='X')
+#    bpy.ops.transform.rotate(value=-yawPitchEuler.y, orient_axis='Y')
+    bpy.ops.transform.rotate(value=-yawPitchEuler.z, orient_axis='Z')
+    
+    
     
     # Arrange selection for knife cutting operation.
     bpy.context.view_layer.objects.active = surfaceToCut
     surfaceCuter.select_set(True)
     
-    override, originalRegion3D = createOverrideContext()
+    override, originalRegion3D = createFaceOverrideContext(position, direction)
 
     # Force redraw the scene - this is considered unsavory but is necessary here.
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+    print("after setting redraw timer")
     
     # The knife project has to be used in edit mode.
     bpy.ops.object.mode_set(mode = 'EDIT')
+    
+    print("after setting edit")
+    
+    print("direction in knifeProject = " + str(direction))
 
     # Knife cutting operation.
     bpy.ops.mesh.knife_project(override)
     
+    print("after knife operation")
+    
     # Go back to object mode. This forces an update of the mesh's internal data.
     bpy.ops.object.mode_set(mode = 'OBJECT')
+    
+    print("after setting object")
+    
+    # Reset the view to it's configuration before the knife project.
+    setRegion3D(override, originalRegion3D)
+    print("after setting original region")
     
     # Keep the selected face resulting from the knife project.
     resultingPolygon = None
@@ -60,8 +107,7 @@ def knifeProject(surfaceToCut, surfaceCuter):
         if currentPolygon.select:
             resultingPolygon = currentPolygon
     
-    # Reset the view to it's configuration before the knife project.
-    setRegion3D(override, originalRegion3D)
+    print("after finding resulting polygon")
     
     return resultingPolygon
 
@@ -116,21 +162,25 @@ def rectangleBorders(parentObject, face):
     return (minX, maxX, minY, maxY)
 
 # Cuts a random shape in a surface, then gives it a crease to make it look like a plate.
-def cutPlate(seed, objectToCut, faceToCut, cuttingShape):
+def cutPlate(seed, objectToCut, cuttingShape, position, direction, tangent):
     
     # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
     random.seed(seed)
 
     # Use the cutting shape to cut the currently selected surface.
-    resultingFace = knifeProject(objectToCut, cuttingShape)
+    resultingFace = knifeProject(objectToCut, cuttingShape, position, direction, tangent)
+    
+    print("after knifeProject function")
 
     # Delete the no longer needed cutting shape.
     dataToRemove = cuttingShape.data
-    bpy.data.objects.remove(cuttingShape)
-    bpy.data.meshes.remove(dataToRemove)
+    #bpy.data.objects.remove(cuttingShape)
+    #bpy.data.meshes.remove(dataToRemove)
     
     # Crease the cut surface.
     addCutCrease(objectToCut)
+    
+    print("after CutCrease")
 
     return resultingFace
 
@@ -211,11 +261,17 @@ def genericCutPlate(seed, objectToCut, faceTuple):
     cuttingShapeInnerBoundsOffset = (   (cuttingShapeInnerBounds[2] + cuttingShapeInnerBounds[0]) * 0.5, # width
                                         (cuttingShapeInnerBounds[3] + cuttingShapeInnerBounds[1]) * 0.5) # height
     
+    # Create override context for the cuts.
+    normalForCuts = faceToCut.normal.copy()
+    tangentForCuts = faceTangent(objectToCut, faceToCut.index).copy()
+    
+    print("normalForCuts = " + str(normalForCuts))
+    print("tangentForCuts = " + str(tangentForCuts))
     
     # Cut the plate with the tech-ish shape.
-    resultingFace = cutPlate(seed, objectToCut, faceToCut, cuttingShape)
+    resultingFace = cutPlate(seed, objectToCut, cuttingShape, (0,0,0), normalForCuts, tangentForCuts)
     
-    
+    print("after cutPlate")
     
     ## Cut the surface again to have a clean surface to work with for recursivity.
     # Generate a plane cutting shape.
@@ -234,13 +290,19 @@ def genericCutPlate(seed, objectToCut, faceTuple):
     # The cutting plane is the active object.
     cuttingShape = bpy.context.active_object
     
+    print("before clean face knifeProject")
+    print("normalForCuts before knifeProject = " + str(normalForCuts))
+    
     # Use the cutting shape to cut the currently selected surface.
-    resultingFace = knifeProject(objectToCut, cuttingShape)
+    resultingFace = knifeProject(objectToCut, cuttingShape, (0,0,0), normalForCuts, tangentForCuts)
+    
+    print("after clean face knifeProject")
     
     # Delete the no longer needed cutting shape.
     dataToRemove = cuttingShape.data
     bpy.data.objects.remove(cuttingShape)
     bpy.data.meshes.remove(dataToRemove)
+    
     
     if not resultingFace == None:
         resultingFaceTuple = buildFaceTuple(objectToCut, resultingFace.index)
@@ -256,7 +318,7 @@ if __name__ == "__main__":
     bpy.ops.object.delete(use_global=False, confirm=False)
 
     # Create a new plane.
-    bpy.ops.mesh.primitive_plane_add(view_align=False, enter_editmode=True, location=(0, 0, 0))
+    bpy.ops.mesh.primitive_plane_add(align='WORLD', enter_editmode=True, location=(0, 0, 0))
 #    bpy.ops.transform.resize(value=(1, 2.0, 1), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, False), mirror=True, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1)
     
     bpy.ops.object.mode_set(mode = 'OBJECT')

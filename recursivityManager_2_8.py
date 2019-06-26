@@ -42,14 +42,16 @@ subdivide_surface_2_8.minimumLength = 0.05
 cut_surface0_2_8.bevelOffset = 0.001
 cut_surface0_2_8.cuttingShapeMargin = 0.9
 cut_surface0_2_8.cleanFaceMargin = 0.7
+# Modify cutting shapes generation.
+generate_cuttingShape0_2_8.roundProbability = 0.0
 
 # Recursive settings.
-recursiveDepth = 5
+recursiveDepth = 2
 subdivisionOverCutProbability = 0.7
 
 # Batches generation.
-batchSize = 3
-seedOffsetForBatches = 0
+batchSize = 1
+seedOffsetForBatches = 6
 
 
 
@@ -117,7 +119,6 @@ def subdivideOrCut(seed, objectToBrowse, facesTuples):
     # Filter out empty elements.
     finalFacesTuples = [currentTuple for currentTuple in finalFacesTuples if not (currentTuple == [] or currentTuple == None) ]
     
-    print("finalFacesTuples before sort = " + str(finalFacesTuples))
     print("finalFacesTuples before sort = " + str([currentTuple[0] for currentTuple in finalFacesTuples]))
     
     # Sort the arrays from in descending order according to the index, to avoid index offsetting side effects when modifying a face.
@@ -142,16 +143,28 @@ def recursiveGeneration(seed, objectToModify, facesToModify, recursiveDepth):
         if recursiveDepth > 0:
             recursiveGeneration(random.randint(0, 100000), objectToModify, resultingFaceTuples, recursiveDepth - 1)
 
-
    
  
 def generateBatch(squareSize):
+
+    #datetime.now()
+    # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
+    #random.seed(0)
+    random.seed(datetime.now())
     
     facesCount = 0
     for xCoords in range(0, squareSize):
         for yCoords in range(0, squareSize):
             
-            bpy.ops.mesh.primitive_plane_add(size=0.95, view_align=False, enter_editmode=False, location=(xCoords, yCoords, 0))
+            bpy.ops.mesh.primitive_plane_add(size=0.95, align='WORLD', enter_editmode=False, location=(xCoords, yCoords, 0))
+            
+            #bpy.ops.transform.rotate(value=1.1055, orient_axis='X', orient_type='GLOBAL', orient_matrix=((-0.527618, 0.849482, 6.25849e-07), (-0.432952, -0.268908, -0.860373), (0.730871, 0.453949, -0.509665)), orient_matrix_type='VIEW', mirror=True)
+            bpy.ops.transform.rotate(value=random.uniform(0, 4), orient_axis='Z', orient_type='VIEW', orient_matrix=((0.993576, 0.113164, 4.95464e-07), (-0.0669248, 0.587603, -0.806377), (0.0912528, -0.801197, -0.591402)), orient_matrix_type='VIEW')
+            #bpy.ops.transform.rotate(value=-1.5708, orient_axis='X', orient_type='GLOBAL', orient_matrix=((-0.527618, 0.849482, 6.25849e-07), (-0.432952, -0.268908, -0.860373), (0.730871, 0.453949, -0.509665)), orient_matrix_type='VIEW', mirror=True)
+            
+            
+            bpy.ops.object.transform_apply() # TODO: remove this later, only for temporary edit mode normal direction test.
+
             
         
             # Keep track of the selected object.
