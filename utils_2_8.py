@@ -157,7 +157,7 @@ def faceTangent(object, faceIndex):
     vertA = object.data.vertices[edgeKeys[0]]
     vertB = object.data.vertices[edgeKeys[1]]
     
-    tangent = vertA.co - vertB.co
+    tangent = (vertA.co - vertB.co).normalized()
     
     return tangent
         

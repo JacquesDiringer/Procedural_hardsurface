@@ -42,31 +42,27 @@ def knifeProject(surfaceToCut, surfaceCuter, position, direction, tangent):
         print("surfaceToCut = " + str(surfaceToCut))
         print("surfaceCuter = " + str(surfaceCuter))
         return
+        
+    # Compute the biTangent thanks to the normal and tangent.
+    biTangent = direction.cross(tangent)
     
-    # Compute the yaw pitch rotation for surfaceCuter.
-    yawPitchQuat = direction.to_track_quat('Z', 'Y')
-    yawPitchEuler = yawPitchQuat.to_euler()
-    print("yawPitchEuler = " + str(yawPitchEuler))
+    # Assemble a TBN matrix from the normal, tangent and bitangent of the face.
+    tbnMatrix = mathutils.Matrix([
+    [tangent.x,         tangent.y,          tangent.z       ],
+    [biTangent.x,       biTangent.y,        biTangent.z     ],
+    [direction.x,       direction.y,        direction.z     ]
+    ])
     
-    # Compute the roll rotation for surfaceCuter.
-    # First rotate the tangent flat.
-    rotatedTangent = yawPitchQuat.inverted() @ tangent;
-    
-    
-    rollEuler = rotatedTangent.to_track_quat('Y', 'Z').to_euler()
-    print("rollEuler = " + str(rollEuler))
-    
+    # The TBN is converted to euler angles to circle around Blender's poor matrix update system.
+    eulerFromTbn = tbnMatrix.to_euler()
     
     # Select only the surfaceCuter.
     bpy.ops.object.select_all(action='DESELECT')
     surfaceCuter.select_set(True)
     # And rotate it.
-    
-    bpy.ops.transform.rotate(value=rollEuler.z, orient_axis='Z')
-    
-    bpy.ops.transform.rotate(value=-yawPitchEuler.x, orient_axis='X')
-#    bpy.ops.transform.rotate(value=-yawPitchEuler.y, orient_axis='Y')
-    bpy.ops.transform.rotate(value=-yawPitchEuler.z, orient_axis='Z')
+    bpy.ops.transform.rotate(value=eulerFromTbn.z, orient_axis='Z')
+    bpy.ops.transform.rotate(value=eulerFromTbn.y, orient_axis='Y')
+    bpy.ops.transform.rotate(value=eulerFromTbn.x, orient_axis='X')
     
     
     
@@ -78,36 +74,24 @@ def knifeProject(surfaceToCut, surfaceCuter, position, direction, tangent):
 
     # Force redraw the scene - this is considered unsavory but is necessary here.
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-    print("after setting redraw timer")
     
     # The knife project has to be used in edit mode.
     bpy.ops.object.mode_set(mode = 'EDIT')
-    
-    print("after setting edit")
-    
-    print("direction in knifeProject = " + str(direction))
 
     # Knife cutting operation.
     bpy.ops.mesh.knife_project(override)
     
-    print("after knife operation")
-    
     # Go back to object mode. This forces an update of the mesh's internal data.
     bpy.ops.object.mode_set(mode = 'OBJECT')
     
-    print("after setting object")
-    
     # Reset the view to it's configuration before the knife project.
     setRegion3D(override, originalRegion3D)
-    print("after setting original region")
     
     # Keep the selected face resulting from the knife project.
     resultingPolygon = None
     for currentPolygon in surfaceToCut.data.polygons:
         if currentPolygon.select:
             resultingPolygon = currentPolygon
-    
-    print("after finding resulting polygon")
     
     return resultingPolygon
 
@@ -169,8 +153,6 @@ def cutPlate(seed, objectToCut, cuttingShape, position, direction, tangent):
 
     # Use the cutting shape to cut the currently selected surface.
     resultingFace = knifeProject(objectToCut, cuttingShape, position, direction, tangent)
-    
-    print("after knifeProject function")
 
     # Delete the no longer needed cutting shape.
     dataToRemove = cuttingShape.data
@@ -179,8 +161,6 @@ def cutPlate(seed, objectToCut, cuttingShape, position, direction, tangent):
     
     # Crease the cut surface.
     addCutCrease(objectToCut)
-    
-    print("after CutCrease")
 
     return resultingFace
 
@@ -265,13 +245,8 @@ def genericCutPlate(seed, objectToCut, faceTuple):
     normalForCuts = faceToCut.normal.copy()
     tangentForCuts = faceTangent(objectToCut, faceToCut.index).copy()
     
-    print("normalForCuts = " + str(normalForCuts))
-    print("tangentForCuts = " + str(tangentForCuts))
-    
     # Cut the plate with the tech-ish shape.
     resultingFace = cutPlate(seed, objectToCut, cuttingShape, (0,0,0), normalForCuts, tangentForCuts)
-    
-    print("after cutPlate")
     
     ## Cut the surface again to have a clean surface to work with for recursivity.
     # Generate a plane cutting shape.
@@ -290,13 +265,8 @@ def genericCutPlate(seed, objectToCut, faceTuple):
     # The cutting plane is the active object.
     cuttingShape = bpy.context.active_object
     
-    print("before clean face knifeProject")
-    print("normalForCuts before knifeProject = " + str(normalForCuts))
-    
     # Use the cutting shape to cut the currently selected surface.
     resultingFace = knifeProject(objectToCut, cuttingShape, (0,0,0), normalForCuts, tangentForCuts)
-    
-    print("after clean face knifeProject")
     
     # Delete the no longer needed cutting shape.
     dataToRemove = cuttingShape.data
