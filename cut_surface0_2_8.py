@@ -32,7 +32,7 @@ cleanFaceMargin = 0.9
 bevelOffset = 0.01
 
 
-def knifeProject(surfaceToCut, surfaceCuter, position, direction, tangent):
+def knifeProject(surfaceToCut, surfaceCuter, position, tbnMatrix):
     
     bpy.ops.object.mode_set(mode = 'OBJECT')
     
@@ -42,16 +42,6 @@ def knifeProject(surfaceToCut, surfaceCuter, position, direction, tangent):
         print("surfaceToCut = " + str(surfaceToCut))
         print("surfaceCuter = " + str(surfaceCuter))
         return
-        
-    # Compute the biTangent thanks to the normal and tangent.
-    biTangent = direction.cross(tangent)
-    
-    # Assemble a TBN matrix from the normal, tangent and bitangent of the face.
-    tbnMatrix = mathutils.Matrix([
-    [tangent.x,         tangent.y,          tangent.z       ],
-    [biTangent.x,       biTangent.y,        biTangent.z     ],
-    [direction.x,       direction.y,        direction.z     ]
-    ])
     
     # The TBN is converted to euler angles to circle around Blender's poor matrix update system.
     eulerFromTbn = tbnMatrix.to_euler()
@@ -70,6 +60,8 @@ def knifeProject(surfaceToCut, surfaceCuter, position, direction, tangent):
     bpy.context.view_layer.objects.active = surfaceToCut
     surfaceCuter.select_set(True)
     
+    direction = tbnMatrix[2]
+    # Create override context for the cuts.
     override, originalRegion3D = createFaceOverrideContext(position, direction)
 
     # Force redraw the scene - this is considered unsavory but is necessary here.
@@ -125,7 +117,7 @@ def addCutCrease(surfaceToCrease):
 # Computes the borders of a given face in world space. This includes the size of the parent object.
 # The face should be a rectangular quad.
 # Warning: This algorithm assumes that the face is axis aligned.
-def rectangleBorders(parentObject, face):
+def rectangleBorders(parentObject, face, tbnMatrix):
     minX = sys.float_info.max
     maxX = -sys.float_info.max
     minY = sys.float_info.max
@@ -134,25 +126,26 @@ def rectangleBorders(parentObject, face):
     for currentVertexIndex in face.vertices:
         currentVertex = face.id_data.vertices[currentVertexIndex]
         currentWorldCoords = parentObject.matrix_world @ currentVertex.co
-        if currentWorldCoords.x < minX:
-            minX = currentWorldCoords.x
-        if currentWorldCoords.x > maxX:
-            maxX = currentWorldCoords.x
-        if currentWorldCoords.y < minY:
-            minY = currentWorldCoords.y
-        if currentWorldCoords.y > maxY:
-            maxY = currentWorldCoords.y
+        currentTangentCoords = tbnMatrix @ currentWorldCoords
+        if currentTangentCoords.x < minX:
+            minX = currentTangentCoords.x
+        if currentTangentCoords.x > maxX:
+            maxX = currentTangentCoords.x
+        if currentTangentCoords.y < minY:
+            minY = currentTangentCoords.y
+        if currentTangentCoords.y > maxY:
+            maxY = currentTangentCoords.y
     
     return (minX, maxX, minY, maxY)
 
 # Cuts a random shape in a surface, then gives it a crease to make it look like a plate.
-def cutPlate(seed, objectToCut, cuttingShape, position, direction, tangent):
+def cutPlate(seed, objectToCut, cuttingShape, position, tbnMatrix):
     
     # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
     random.seed(seed)
 
     # Use the cutting shape to cut the currently selected surface.
-    resultingFace = knifeProject(objectToCut, cuttingShape, position, direction, tangent)
+    resultingFace = knifeProject(objectToCut, cuttingShape, position, tbnMatrix)
 
     # Delete the no longer needed cutting shape.
     dataToRemove = cuttingShape.data
@@ -187,10 +180,23 @@ def genericCutPlate(seed, objectToCut, faceTuple):
         print("Tried to cut a None face")
         return
     
+    # Compute normal and tangent of the current face to cut.
+    normalForCuts = faceToCut.normal.copy()
+    tangentForCuts = faceTangent(objectToCut, faceToCut.index).copy()
+    # Compute the biTangent thanks to the normal and tangent.
+    biTangentForCuts = normalForCuts.cross(tangentForCuts)
+    
+    # Assemble a TBN matrix from the normal, tangent and bitangent of the face.
+    tbnMatrix = mathutils.Matrix([
+    [tangentForCuts.x,      tangentForCuts.y,   tangentForCuts.z    ],
+    [biTangentForCuts.x,    biTangentForCuts.y, biTangentForCuts.z  ],
+    [normalForCuts.x,       normalForCuts.y,    normalForCuts.z     ]
+    ])
+    
     # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
     random.seed(seed)
     
-    rectBorders = rectangleBorders(objectToCut, faceToCut)
+    rectBorders = rectangleBorders(objectToCut, faceToCut, tbnMatrix)
     
     rectDimension = (rectBorders[0], rectBorders[1], rectBorders[2], rectBorders[3])
     
@@ -241,12 +247,8 @@ def genericCutPlate(seed, objectToCut, faceTuple):
     cuttingShapeInnerBoundsOffset = (   (cuttingShapeInnerBounds[2] + cuttingShapeInnerBounds[0]) * 0.5, # width
                                         (cuttingShapeInnerBounds[3] + cuttingShapeInnerBounds[1]) * 0.5) # height
     
-    # Create override context for the cuts.
-    normalForCuts = faceToCut.normal.copy()
-    tangentForCuts = faceTangent(objectToCut, faceToCut.index).copy()
-    
     # Cut the plate with the tech-ish shape.
-    resultingFace = cutPlate(seed, objectToCut, cuttingShape, (0,0,0), normalForCuts, tangentForCuts)
+    resultingFace = cutPlate(seed, objectToCut, cuttingShape, (0,0,0), tbnMatrix)
     
     ## Cut the surface again to have a clean surface to work with for recursivity.
     # Generate a plane cutting shape.
@@ -266,7 +268,7 @@ def genericCutPlate(seed, objectToCut, faceTuple):
     cuttingShape = bpy.context.active_object
     
     # Use the cutting shape to cut the currently selected surface.
-    resultingFace = knifeProject(objectToCut, cuttingShape, (0,0,0), normalForCuts, tangentForCuts)
+    resultingFace = knifeProject(objectToCut, cuttingShape, (0,0,0), tbnMatrix)
     
     # Delete the no longer needed cutting shape.
     dataToRemove = cuttingShape.data
