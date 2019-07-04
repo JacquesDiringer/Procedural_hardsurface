@@ -49,10 +49,13 @@ def knifeProject(surfaceToCut, surfaceCuter, position, tbnMatrix):
     # Select only the surfaceCuter.
     bpy.ops.object.select_all(action='DESELECT')
     surfaceCuter.select_set(True)
-    # And rotate it.
+    # Rotate it.
     bpy.ops.transform.rotate(value=eulerFromTbn.z, orient_axis='Z')
     bpy.ops.transform.rotate(value=eulerFromTbn.y, orient_axis='Y')
     bpy.ops.transform.rotate(value=eulerFromTbn.x, orient_axis='X')
+    # And translate it.
+#    bpy.ops.transform.translate(value=(-position[0], -position[1], -position[2]), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL')
+    bpy.ops.transform.translate(value=(-position[0], -position[1], -position[2]), orient_type='GLOBAL', orient_matrix=((0, 0, 0), (0, 0, 0), (0, 0, 0)), orient_matrix_type='GLOBAL')
     
     
     
@@ -138,6 +141,23 @@ def rectangleBorders(parentObject, face, tbnMatrix):
     
     return (minX, maxX, minY, maxY)
 
+
+# Basicaly computes the mean position of the rectangles 4 vertices to return it's center.
+def rectangleCenter(parentObject, face):
+    meanPosition = mathutils.Vector((0,0,0))
+    for currentVertexIndex in face.vertices:
+        # Find the vertex.
+        currentVertex = face.id_data.vertices[currentVertexIndex]
+        # Compute it's world coordinates.
+        currentWorldCoords = parentObject.matrix_world @ currentVertex.co
+        # Add it to the mean position.
+        meanPosition = meanPosition + currentWorldCoords
+        
+    return meanPosition / len(face.vertices)
+        
+        
+    
+
 # Cuts a random shape in a surface, then gives it a crease to make it look like a plate.
 def cutPlate(seed, objectToCut, cuttingShape, position, tbnMatrix):
     
@@ -196,7 +216,11 @@ def genericCutPlate(seed, objectToCut, faceTuple):
     # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
     random.seed(seed)
     
+    # Compute the dimension of the face to cut.
     rectBorders = rectangleBorders(objectToCut, faceToCut, tbnMatrix)
+    
+    # Compute the center of the face to cut.
+    facePosition = rectangleCenter(objectToCut, faceToCut)
     
     rectDimension = (rectBorders[0], rectBorders[1], rectBorders[2], rectBorders[3])
     
@@ -248,7 +272,7 @@ def genericCutPlate(seed, objectToCut, faceTuple):
                                         (cuttingShapeInnerBounds[3] + cuttingShapeInnerBounds[1]) * 0.5) # height
     
     # Cut the plate with the tech-ish shape.
-    resultingFace = cutPlate(seed, objectToCut, cuttingShape, (0,0,0), tbnMatrix)
+    resultingFace = cutPlate(seed, objectToCut, cuttingShape, facePosition, tbnMatrix)
     
     ## Cut the surface again to have a clean surface to work with for recursivity.
     # Generate a plane cutting shape.
@@ -268,7 +292,7 @@ def genericCutPlate(seed, objectToCut, faceTuple):
     cuttingShape = bpy.context.active_object
     
     # Use the cutting shape to cut the currently selected surface.
-    resultingFace = knifeProject(objectToCut, cuttingShape, (0,0,0), tbnMatrix)
+    resultingFace = knifeProject(objectToCut, cuttingShape, facePosition, tbnMatrix)
     
     # Delete the no longer needed cutting shape.
     dataToRemove = cuttingShape.data
