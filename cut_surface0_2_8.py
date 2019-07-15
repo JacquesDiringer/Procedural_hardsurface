@@ -54,8 +54,9 @@ def knifeProject(surfaceToCut, surfaceCuter, position, tbnMatrix):
     bpy.ops.transform.rotate(value=eulerFromTbn.y, orient_axis='Y')
     bpy.ops.transform.rotate(value=eulerFromTbn.x, orient_axis='X')
     # And translate it.
-#    bpy.ops.transform.translate(value=(-position[0], -position[1], -position[2]), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL')
-    bpy.ops.transform.translate(value=(-position[0], -position[1], -position[2]), orient_type='GLOBAL', orient_matrix=((0, 0, 0), (0, 0, 0), (0, 0, 0)), orient_matrix_type='GLOBAL')
+    bpy.ops.transform.translate(value=(position[0], position[1], position[2]), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL')
+    
+    print("position = " + str(position))
     
     
     
@@ -169,8 +170,8 @@ def cutPlate(seed, objectToCut, cuttingShape, position, tbnMatrix):
 
     # Delete the no longer needed cutting shape.
     dataToRemove = cuttingShape.data
-    #bpy.data.objects.remove(cuttingShape)
-    #bpy.data.meshes.remove(dataToRemove)
+    bpy.data.objects.remove(cuttingShape)
+    bpy.data.meshes.remove(dataToRemove)
     
     # Crease the cut surface.
     addCutCrease(objectToCut)
@@ -220,17 +221,17 @@ def genericCutPlate(seed, objectToCut, faceTuple):
     rectBorders = rectangleBorders(objectToCut, faceToCut, tbnMatrix)
     
     # Compute the center of the face to cut.
-    facePosition = rectangleCenter(objectToCut, faceToCut)
+    faceCenter = rectangleCenter(objectToCut, faceToCut)
+    print("faceCenter = " + str(faceCenter))
     
     rectDimension = (rectBorders[0], rectBorders[1], rectBorders[2], rectBorders[3])
     
     faceWidth   = rectDimension[1] - rectDimension[0]
     faceHeight  = rectDimension[3] - rectDimension[2]
-    facePosition = ((rectDimension[1] + rectDimension[0]) * 0.5, (rectDimension[3] + rectDimension[2]) * 0.5, 0)
 
     # Generate a cutting shape
     cuttingShapeDimension = (faceWidth * 0.5, faceHeight * 0.5)
-    cuttingShape, edgesDepth = generateRectangleCuttingShape(seed=random.randint(0, 100000), position=facePosition, dimension=cuttingShapeDimension, recursionDepth=0)
+    cuttingShape, edgesDepth = generateRectangleCuttingShape(seed=random.randint(0, 100000), position=(0,0,0), dimension=cuttingShapeDimension, recursionDepth=0)
     
     cuttingShapeOuterBounds =  [-cuttingShapeDimension[0]/2 - max(0, edgesDepth[0]), # left
                                 -cuttingShapeDimension[1]/2 - max(0, edgesDepth[1]), # bottom
@@ -272,17 +273,16 @@ def genericCutPlate(seed, objectToCut, faceTuple):
                                         (cuttingShapeInnerBounds[3] + cuttingShapeInnerBounds[1]) * 0.5) # height
     
     # Cut the plate with the tech-ish shape.
-    resultingFace = cutPlate(seed, objectToCut, cuttingShape, facePosition, tbnMatrix)
+    resultingFace = cutPlate(seed, objectToCut, cuttingShape, faceCenter, tbnMatrix)
     
     ## Cut the surface again to have a clean surface to work with for recursivity.
     # Generate a plane cutting shape.
-    bpy.ops.mesh.primitive_plane_add(size=1, align='WORLD', enter_editmode=True, location=(facePosition))
+    bpy.ops.mesh.primitive_plane_add(size=1, align='WORLD', enter_editmode=True, location=((0,0,0)))
     # Re-scale to fit the plane in the inner bounds.
     cleanFaceScale = (cuttingShapeInnerBoundsDimension[0] * cleanFaceMargin, cuttingShapeInnerBoundsDimension[1] * cleanFaceMargin, 1)
     bpy.ops.transform.resize(value=cleanFaceScale, orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL')
     # Translate to fit the plane in the inner bounds.
     cleanFaceTranslation = (cuttingShapeInnerBoundsOffset[0], cuttingShapeInnerBoundsOffset[1], 0)
-#    cleanFaceTranslation = (0.06072782036990082, 0.009383141258685945, 0)
     bpy.ops.transform.translate(value=cleanFaceTranslation, orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL')
 
     # Go back to object mode.
@@ -292,7 +292,7 @@ def genericCutPlate(seed, objectToCut, faceTuple):
     cuttingShape = bpy.context.active_object
     
     # Use the cutting shape to cut the currently selected surface.
-    resultingFace = knifeProject(objectToCut, cuttingShape, facePosition, tbnMatrix)
+    resultingFace = knifeProject(objectToCut, cuttingShape, faceCenter, tbnMatrix)
     
     # Delete the no longer needed cutting shape.
     dataToRemove = cuttingShape.data

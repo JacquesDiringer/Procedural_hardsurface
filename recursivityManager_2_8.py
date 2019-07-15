@@ -50,7 +50,7 @@ recursiveDepth = 2
 subdivisionOverCutProbability = 0.7
 
 # Batches generation.
-batchSize = 1
+batchSize = 5
 seedOffsetForBatches = 6
 
 
@@ -149,7 +149,7 @@ def generateBatch(squareSize):
 
     #datetime.now()
     # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
-    #random.seed(0)
+    #random.seed(1)
     random.seed(datetime.now())
     
     facesCount = 0
@@ -162,8 +162,11 @@ def generateBatch(squareSize):
             bpy.ops.transform.rotate(value=random.uniform(0, 4), orient_axis='Z', orient_type='VIEW', orient_matrix=((0.993576, 0.113164, 4.95464e-07), (-0.0669248, 0.587603, -0.806377), (0.0912528, -0.801197, -0.591402)), orient_matrix_type='VIEW')
             #bpy.ops.transform.rotate(value=-1.5708, orient_axis='X', orient_type='GLOBAL', orient_matrix=((-0.527618, 0.849482, 6.25849e-07), (-0.432952, -0.268908, -0.860373), (0.730871, 0.453949, -0.509665)), orient_matrix_type='VIEW', mirror=True)
             
+            position = (1,0,0)
+            bpy.ops.transform.translate(value=(-position[0], -position[1], -position[2]), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL')
             
             bpy.ops.object.transform_apply() # TODO: remove this later, only for temporary edit mode normal direction test.
+            
 
             
         
@@ -223,6 +226,8 @@ def applyToSelectedFaces():
     
 # Test function
 if __name__ == "__main__":
+    
+    print("////// Recusivity manager launch //////")
     
     generateBatch(batchSize)
 #    applyToSelectedFaces()
