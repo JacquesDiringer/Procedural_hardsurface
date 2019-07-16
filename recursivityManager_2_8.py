@@ -92,6 +92,7 @@ def subdivideOrCut(seed, objectToBrowse, facesTuples):
     # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
     random.seed(seed)
     
+    print("facesTuples = " + str(facesTuples))
     print("facesTuples = " + str([currentTuple[0] for currentTuple in facesTuples]))
     
     # Final result to return.
@@ -217,8 +218,11 @@ def applyToSelectedFaces():
         counter = counter + 1
         print(str(counter) + " of " + str(totalFaces) + " faces.")
         
+        # Build tuple.
+        firstPolygonTuple = buildFaceTuple(objectToModify, objectToModify.data.polygons[currentFaceIndex].index)
+        
         # Recursive generation.
-        recursiveGeneration(objectToModify, [objectToModify.data.polygons[currentFaceIndex]])
+        recursiveGeneration(counter, objectToModify, [firstPolygonTuple], recursiveDepth)
     
     # Go back in edit mode.
     bpy.ops.object.mode_set(mode = 'EDIT')
@@ -229,5 +233,5 @@ if __name__ == "__main__":
     
     print("////// Recusivity manager launch //////")
     
-    generateBatch(batchSize)
-#    applyToSelectedFaces()
+#    generateBatch(batchSize)
+    applyToSelectedFaces()
