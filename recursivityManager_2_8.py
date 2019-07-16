@@ -15,6 +15,10 @@ import copy
 blend_dir = os.path.dirname(bpy.data.filepath)
 if blend_dir not in sys.path:
    sys.path.append(blend_dir)
+   
+# First inset.
+firstInsetDepth = -0.1
+firstInsetThickness = 0.0
 
 # Surface cutting.  
 import cut_surface0_2_8
@@ -26,7 +30,7 @@ import subdivide_surface_2_8
 importlib.reload(subdivide_surface_2_8)
 from subdivide_surface_2_8 import *
 
-# Insets.
+# Recursive insets.
 import inset_surface_2_8
 importlib.reload(inset_surface_2_8)
 from inset_surface_2_8 import *
@@ -199,6 +203,11 @@ def applyToSelectedFaces():
     
     # Keep a reference to the object to modify.
     objectToModify = bpy.context.edit_object
+    
+    
+    # First operations.
+    # Inset.
+    bpy.ops.mesh.inset(thickness=firstInsetThickness, depth=firstInsetDepth)
     
     # Populate an array of currently selected faces.
     # First the mandatory object mode to have up to date select values for faces.
