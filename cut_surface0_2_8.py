@@ -112,7 +112,8 @@ def addCutCrease(surfaceToCrease):
     bpy.ops.mesh.mark_sharp()
     
     # Lower the middle segment to create the crease.
-    bpy.ops.transform.translate(value=(0, 0, -bevelOffset * 2), orient_type='LOCAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, True), mirror=True)
+    bpy.ops.transform.shrink_fatten(value=bevelOffset)
+
     
     # Go back to object mode.
     bpy.ops.object.mode_set(mode = 'OBJECT')
