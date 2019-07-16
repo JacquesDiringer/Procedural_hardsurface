@@ -46,7 +46,7 @@ cut_surface0_2_8.cleanFaceMargin = 0.7
 generate_cuttingShape0_2_8.roundProbability = 0.0
 
 # Recursive settings.
-recursiveDepth = 2
+recursiveDepth = 1
 subdivisionOverCutProbability = 0.7
 
 # Batches generation.
@@ -92,8 +92,7 @@ def subdivideOrCut(seed, objectToBrowse, facesTuples):
     # Initialize the random seed, this is important in order to generate exactly the same content for a given seed.
     random.seed(seed)
     
-    print("facesTuples = " + str(facesTuples))
-    print("facesTuples = " + str([currentTuple[0] for currentTuple in facesTuples]))
+    print("subdivideOrCut facesTuples = " + str([currentTuple[0] for currentTuple in facesTuples]))
     
     # Final result to return.
     finalFacesTuples = []
@@ -168,8 +167,6 @@ def generateBatch(squareSize):
             
             bpy.ops.object.transform_apply() # TODO: remove this later, only for temporary edit mode normal direction test.
             
-
-            
         
             # Keep track of the selected object.
             originalySelectedObject = bpy.context.active_object
@@ -208,7 +205,9 @@ def applyToSelectedFaces():
     bpy.ops.object.mode_set(mode = 'OBJECT')
     
     # The faces should have 4 vertices exactly.
+    # Sort the array from in descending order according to the index, to avoid index offsetting side effects when modifying a face.
     selectedFacesIndexes = [currentFace.index for currentFace in objectToModify.data.polygons if currentFace.select and len(currentFace.vertices) == 4]
+    selectedFacesIndexes = sorted(selectedFacesIndexes, reverse = True)
     
     totalFaces = len(selectedFacesIndexes)
     counter = 0
