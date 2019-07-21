@@ -17,7 +17,7 @@ if blend_dir not in sys.path:
    sys.path.append(blend_dir)
    
 # First inset.
-firstInsetDepth = -0.1
+firstInsetDepth = -0.03
 firstInsetThickness = 0.0
 
 # Surface cutting.  
@@ -36,8 +36,8 @@ importlib.reload(inset_surface_2_8)
 from inset_surface_2_8 import *
 
     
-subdivisionProbability = 0.8
-insetProbability = 0.5
+subdivisionProbability = 1.8
+insetProbability = 0.1
 
 
 # Parameters for other modules.
@@ -50,7 +50,7 @@ cut_surface0_2_8.cleanFaceMargin = 0.7
 generate_cuttingShape0_2_8.roundProbability = 0.0
 
 # Recursive settings.
-recursiveDepth = 1
+recursiveDepth = 3
 subdivisionOverCutProbability = 0.7
 
 # Batches generation.
@@ -205,9 +205,12 @@ def applyToSelectedFaces():
     objectToModify = bpy.context.edit_object
     
     
-    # First operations.
+    # Preliminary operations, before any recursion.
     # Inset.
     bpy.ops.mesh.inset(thickness=firstInsetThickness, depth=firstInsetDepth)
+    
+    # Apply the details material to the faces inside the inset.
+    assignMaterialSlotByName("hardsurface_details_material")
     
     # Populate an array of currently selected faces.
     # First the mandatory object mode to have up to date select values for faces.

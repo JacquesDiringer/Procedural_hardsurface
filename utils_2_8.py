@@ -209,3 +209,28 @@ def findFaceByVertices(objectToBrowse, verticesArray):
             foundFace = currentPolygon.index
     
     return foundFace
+
+
+
+# Material related functions.
+
+# Switch the selected material slot of the current object taking a string in.
+def switchMaterialSlotByName(slotName):
+    currentIndex = 0
+    for currentSlot in bpy.context.object.material_slots:
+        if currentSlot.name == slotName:
+            bpy.context.object.active_material_index = currentIndex
+            return
+        currentIndex = currentIndex + 1
+        
+   
+# Assign a material slot by name to the currently selected faces.
+def assignMaterialSlotByName(slotName):
+    # Switch to the right material slot.
+    switchMaterialSlotByName(slotName)
+    
+    # Make sure we are in edit mode.
+    bpy.ops.object.mode_set(mode = 'EDIT')
+    
+    # Assign the slot.
+    bpy.ops.object.material_slot_assign()
